@@ -9,7 +9,8 @@ library(lubridate)
 library(quantmod)
 #library(PerformanceAnalytics)
 
-lib.path="~/src/lib"
+m.path="~/src/analyze_R"
+lib.path=paste(m.path,"lib",sep="/")
 source(paste(lib.path,"misc.R",sep="/"))
 source(paste(lib.path,"dataFeed.R",sep="/"))
 source(paste(lib.path,"xq_tools.R",sep="/"))
@@ -233,9 +234,9 @@ for(i in my.period:my.row)
 #head(f.xts)
 #tail(f.xts)
 #summary(f.xts)
-save.image(file=paste0("~/src/data/",freq.data,"_xq_data.RData"))
+save.image(file=paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
 print("完成作業空間儲存...")
-#load("~/src/data/xq_data.RData")
+#load(paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
 
 #估算區間獲利率
 f.index <- index(f.xts) #取出日期時間
