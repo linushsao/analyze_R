@@ -20,7 +20,9 @@ f.n <- paste0(f.all[1],f.fix)
 f.import=paste(path.m,"s.data_raw",f.n,sep="/")
 f.import
 
-f.csv <- read.csv(f.import,header=F)[-1,c(1,2,3,4,5,6,7,10,18)]
+f.raw <- read.csv(f.import,header=F)
+f.csv <- f.raw[-1,c(1,2,3,4,5,6,7,10,18)]
+
 head(f.csv,2)
 f.csv$V2 <- gsub(" ","",f.csv$V2)
 f.csv <- f.csv[f.csv$V2=="MTX",]
@@ -43,15 +45,27 @@ for(i in 1:nrow(f.csv))
 
         f.filter <- paste0(f.year,f.month.fix)
 
-        f.csv[i,] <-ifelse(f.csv$group[i]==f.filter,
-                                f.csv$group[i],
-                                NA) 
+        if(f.csv$group[i] !=f.filter)
+        {f.csv[i,] <- NA} 
 
 }
 
-head(f.csv,2)
+f.csv <- na.omit(f.csv)
+head(f.csv)
+
+f.data <- f.csv[,c(4,5,6,7,8)]
+f.index <- as.Date(f.csv[,1])
+head(f.data)
+summary(f.data)
+head(f.index)
+summary(f.index)
+
+for(i in 1:ncol(f.data)){f.data[,i] <- as.numeric(f.data[,i])}
+
+f.xts <- xts(f.data,order.by=f.index)
+
 #繪圖
-chartSeries(f.final,up.col="red",dn.col="green")
+chartSeries(f.xts,up.col="red",dn.col="green")
 #plot(f.xts["2023-03-03 08:45:00::2023-03-03 09:00:00"])
 
 
