@@ -189,11 +189,11 @@ for(i in my.period:my.row)
         #設定預設值
         f.xts$signal[i] <-f.xts$signal[i-1] 
         f.xts$cr.line[i] <-f.xts$cr.line[i-1] 
-        if(coredata(f.xts$cr.line[i-1]) !=0
-           && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
-        {f.xts$crsub.line[i] <- f.xts$cr.line[i]
-                }else{f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
-                        }
+        #if(coredata(f.xts$cr.line[i-1]) !=0
+        #   && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
+        #{f.xts$crsub.line[i] <- f.xts$cr.line[i]
+        #        }else{f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
+        #                }
 
         ##1.產生多空進場線
         ####k同時穿越同向內外標差線
@@ -211,11 +211,11 @@ for(i in my.period:my.row)
                         f.xts$cr.line[i] <- max(f.xts$section.high[i-1],
                                                 f.xts$upper.line[i-1]) #紀錄進場點，正負表多空策略
         ####階梯進出場線 
-        }else if(f.xts$cr.line[i] >0
-                        && f.xts$ex.upper.cross[i-1] ==-1)
-                {f.xts$crsub.line[i] <- f.xts$ex.upper.line[i-1]*pn(f.xts$cr.line[i])
+        }#else if(f.xts$cr.line[i] >0
+         #               && f.xts$ex.upper.cross[i-1] ==-1)
+         #       {f.xts$crsub.line[i] <- f.xts$ex.upper.line[i-1]*pn(f.xts$cr.line[i])
 
-                }
+         #       }
 
 
         if(f.xts$lower.cross[i-1] ==-1                           
@@ -229,11 +229,11 @@ for(i in my.period:my.row)
                 {
                         f.xts$cr.line[i] <- min(f.xts$section.low[i-1]*-1,
                                                 f.xts$lower.line[i-1])
-        }else if(f.xts$cr.line[i] <0
-                        && f.xts$ex.lower.cross[i-1] ==1)
-                {f.xts$crsub.line[i] <- f.xts$ex.lower.line[i-1]*pn(f.xts$cr.line[i])
+        }#else if(f.xts$cr.line[i] <0
+         #               && f.xts$ex.lower.cross[i-1] ==1)
+         #       {f.xts$crsub.line[i] <- f.xts$ex.lower.line[i-1]*pn(f.xts$cr.line[i])
 
-                }
+         #       }
 
         #過濾重複產生之同向進場線
         if((pn(f.xts$cr.line[i]) ==pn(f.xts$cr.line[i-1]))
@@ -246,6 +246,26 @@ for(i in my.period:my.row)
                         )
                 )
         {f.xts$cr.line[i]  <-f.xts$cr.line[i-1]}
+
+        #階梯線
+        ##預設值
+        if(coredata(f.xts$cr.line[i-1]) !=0
+           && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
+        {f.xts$crsub.line[i] <- f.xts$cr.line[i]
+                }else{f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
+                        }
+
+        if(f.xts$cr.line[i] >0
+                && f.xts$ex.upper.cross[i-1] ==-1)
+        {f.xts$crsub.line[i] <- f.xts$ex.upper.line[i-1]*pn(f.xts$cr.line[i])
+                }
+
+        if(f.xts$cr.line[i] <0
+                && f.xts$ex.lower.cross[i-1] ==1)
+        {f.xts$crsub.line[i] <- f.xts$ex.lower.line[i-1]*pn(f.xts$cr.line[i])
+
+                }
+
 
         #2.檢查是否穿越
         check.CrCrossing  <- to.cross(f.xts[i,c(1:5)],base.line=abs(f.xts$cr.line[i]))

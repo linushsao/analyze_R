@@ -16,10 +16,12 @@ to.cross <- function(ohcl,base.line)
         result=0
 
         if(ohcl[,op]<base.line
-                && ohcl[,cl]>base.line)
+                && ohcl[,hi]>base.line
+                && coredata(ohcl[,cl])>coredata(ohcl[,op]))
         {result=1 }
         if(ohcl[,op]>base.line
-                && ohcl[,cl]<base.line)
+                && ohcl[,lo]<base.line
+                && coredata(ohcl[,cl])<coredata(ohcl[,op]))
         {result=-1 }
 
         return(result)
