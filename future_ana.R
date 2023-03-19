@@ -24,7 +24,7 @@ if(getans =='' || getans =='f')
         f.raw <- data.Mgr(x=2)#30分k期貨
         f.index <- datetime2xts(f.raw$date,f.raw$time+1)
         f.xts <- xts(f.raw[,-c(1:2)],order.by=f.index)
-        print("資料類型：30分k期貨")
+        print("資料類型：小台期貨")
 }else{
         freq.data <- 'day'
         f.raw <- data.Mgr(x=3)#日線股票
@@ -48,6 +48,7 @@ my.period=38
 my.section=8
 sd.ratio=0.675
 sd.ratioExtra=1.645
+sd.ratioBorder=2
 
 f.period     <- readline(prompt=paste0("period <",my.period,">? "))
 f.section    <- readline(prompt=paste0("section<",my.section,">? "))
@@ -76,13 +77,21 @@ f.xts$upper.line <- 0
 f.xts$lower.line <- 0
 f.xts$uupper.line <- 0 
 f.xts$llower.line <- 0
+f.xts$ex.upper.line <- 0 
+f.xts$ex.lower.line <- 0
+
 f.xts$if.cross <- 0
-f.xts$cr.line <- 0
+f.xts$cr.line <- 0 #進場線
+f.xts$crsub.line <- 0 #再次進場線
+
 f.xts$crossing.crline <- 0 
-f.xts$upper.over <- 0 
-f.xts$lower.under <- 0
-f.xts$uupper.over <- 0 
-f.xts$llower.under <- 0
+
+f.xts$upper.cross <- 0 
+f.xts$lower.cross <- 0
+f.xts$uupper.cross <- 0 
+f.xts$llower.cross <- 0
+f.xts$ex.upper.cross <- 0 
+f.xts$ex.lower.cross <- 0
 
 f.xts$section.high <- 0
 f.xts$section.low <- 0
@@ -111,6 +120,8 @@ for(i in my.period:my.row)
         f.xts$lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratio
         f.xts$uupper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioExtra
         f.xts$llower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioExtra
+        f.xts$ex.upper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioBorder
+        f.xts$ex.lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioBorder
 
         #計算區間極值線
         section.high <- c(f.xts$high[(i-my.section):(i-1)])
@@ -128,10 +139,16 @@ for(i in my.period:my.row)
 
         print(paste(i,my.row,sep="/"))
         #穿越相關判斷
-        f.xts$upper.over[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$upper.line[i])
-        f.xts$lower.under[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$lower.line[i])
-        f.xts$uupper.over[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$uupper.line[i])
-        f.xts$llower.under[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$llower.line[i])
+        ##穿越定態線
+        f.xts$upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$upper.line[i])  
+        f.xts$lower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$lower.line[i])
+        ##穿越躍遷線
+        f.xts$uupper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$uupper.line[i])
+        f.xts$llower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$llower.line[i])
+        ##穿越極值線
+        f.xts$ex.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$ex.upper.line[i])
+        f.xts$ex.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$ex.lower.line[i])
+
         #[進場條件]
         #<多空外穿越內標差線>
         #多：前k上穿上標差線＋k超越前k高點 || 開盤跳多
@@ -169,18 +186,23 @@ for(i in my.period:my.row)
         if(coredata(f.xts$low[i])<coredata(f.xts$low[i-1])){low.under <- TRUE}
 
         #產生綜合判斷
-        #預設同前值
+        #設定預設值
         f.xts$signal[i] <-f.xts$signal[i-1] 
         f.xts$cr.line[i] <-f.xts$cr.line[i-1] 
+        if(coredata(f.xts$cr.line[i-1]) !=0
+           && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
+        {f.xts$crsub.line[i] <- f.xts$cr.line[i]
+                }else{f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
+                        }
 
         ##1.產生多空進場線
         ####k同時穿越同向內外標差線
-        if(f.xts$upper.over[i-1] ==1                           
-                && f.xts$uupper.over[i-1] ==1)
+        if(f.xts$upper.cross[i-1] ==1                           
+                && f.xts$uupper.cross[i-1] ==1)
         {
                 f.xts$cr.line[i] <- f.xts$uupper.line[i-1] #紀錄進場點，正負表多空策略
         ####K穿越內標差線
-        }else if(f.xts$upper.over[i-1] ==1)
+        }else if(f.xts$upper.cross[i-1] ==1)
                 {
                         f.xts$cr.line[i] <- f.xts$high[i-1] #紀錄進場點，正負表多空策略
         ####跳空開
@@ -188,21 +210,30 @@ for(i in my.period:my.row)
                 {
                         f.xts$cr.line[i] <- max(f.xts$section.high[i-1],
                                                 f.xts$upper.line[i-1]) #紀錄進場點，正負表多空策略
-                        }
+        ####階梯進出場線 
+        }else if(f.xts$cr.line[i] >0
+                        && f.xts$ex.upper.cross[i-1] ==-1)
+                {f.xts$crsub.line[i] <- f.xts$ex.upper.line[i-1]*pn(f.xts$cr.line[i])
+
+                }
 
 
-        if(f.xts$lower.under[i-1] ==-1                           
-                && f.xts$llower.under[i-1] ==-1)
+        if(f.xts$lower.cross[i-1] ==-1                           
+                && f.xts$llower.cross[i-1] ==-1)
         {
                 f.xts$cr.line[i] <- f.xts$llower.line[i-1]*-1 
-        }else if(f.xts$lower.under[i-1]==-1)
+        }else if(f.xts$lower.cross[i-1]==-1)
                 {
                         f.xts$cr.line[i] <- f.xts$low[i-1]*-1
         }else if(f.xts$openjump[i] ==-1)
                 {
                         f.xts$cr.line[i] <- min(f.xts$section.low[i-1]*-1,
                                                 f.xts$lower.line[i-1])
-                        }
+        }else if(f.xts$cr.line[i] <0
+                        && f.xts$ex.lower.cross[i-1] ==1)
+                {f.xts$crsub.line[i] <- f.xts$ex.lower.line[i-1]*pn(f.xts$cr.line[i])
+
+                }
 
         #過濾重複產生之同向進場線
         if((pn(f.xts$cr.line[i]) ==pn(f.xts$cr.line[i-1]))
@@ -236,7 +267,7 @@ for(i in my.period:my.row)
 #summary(f.xts)
 save.image(file=paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
 print("完成作業空間儲存...")
-#load(paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
+load(paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
 
 #估算區間獲利率
 f.index <- index(f.xts) #取出日期時間
@@ -373,10 +404,13 @@ repeat
 
         chartSeries(folio.count[,c(1:5)], up.col='red', dn.col='green'
                     ,TA=list("addTA(abs(folio.count$cr.line),on=1,lwd=2,col='orange')"
+                             ,"addTA(abs(folio.count$crsub.line),on=1,lwd=1,col='orange')"
                              ,"addTA(folio.count$upper.line,on=1,col='gray')"
                              ,"addTA(folio.count$lower.line,on=1,col='gray')"
                              ,"addTA(folio.count$uupper.line,on=1,col='red',lty='dashed')"
                              ,"addTA(folio.count$llower.line,on=1,col='red',lty='dashed')"
+                             ,"addTA(folio.count$ex.upper.line,on=1,col='gray',lty='dashed')"
+                             ,"addTA(folio.count$ex.lower.line,on=1,col='gray',lty='dashed')"
                              ,"addTA(folio.count$base.line,on=1,col='yellow')"
                              ,"addTA(folio.count$section.high,on=1,col='red')"
                              ,"addTA(folio.count$section.low,on=1,col='green')"

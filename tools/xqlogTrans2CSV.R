@@ -1,10 +1,12 @@
 #轉換xq擷取的期貨資料
 #
-source("~/src/lib/xq_tools.R")
+f.pwd <- "~/src/analyze_R"
+source(paste(f.pwd,"lib/xq_tools.R",sep="/"))
 #
-f.folder.in <- "~/s.data_raw"
-f.folder.out <- "~/s.data"
+f.folder.in <- paste(f.pwd,"s.data_raw",sep="/")
+f.folder.out <- paste(f.pwd,"s.data",sep="/")
 f.list <- list.files(path=f.folder.in)
+
 for(f.name in f.list)
 {
         f.fullname.in <- paste(f.folder.in,f.name,sep="/")
