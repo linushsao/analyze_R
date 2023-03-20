@@ -1,7 +1,10 @@
-#cr.line vs unstat.line
-#1-cr.line在unstat.line內部>>出場點回檔un.stat.line
-#2-cr.line在unstat.line外部>>出場點回檔stat.line
-#[DDMBand標差心穿越法]
+#
+#1.前k棒外穿越定態線
+#2.下根k棒穿越前K棒外極值<基本進場線>後[進場]
+#3.反向回檔躍遷線後[出場]，該點同時為<再次進場線>
+#4.再次外穿越<再次進場線>後[進場]
+#5.再次外穿越極值線後[出場]
+#
 
 rm(list=ls())
 #
@@ -45,7 +48,7 @@ nrow(f.xts)
 ##預設基本參數
 ###30分k
 my.period=38 
-my.section=8
+my.section=10
 sd.ratio=0.675
 sd.ratioExtra=1.645
 sd.ratioBorder=2
@@ -83,6 +86,7 @@ f.xts$ex.lower.line <- 0
 f.xts$if.cross <- 0
 f.xts$cr.line <- 0 #進場線
 f.xts$crsub.line <- 0 #再次進場線
+f.xts$cl.line <- 0 #出場線
 
 f.xts$crossing.crline <- 0 
 
@@ -163,7 +167,6 @@ for(i in my.period:my.row)
         #3.反穿越進場線(進場k以後)
         #4.隔天開盤跳開(無論方向)
         #5.同向內標差線與進場線起點相對位置，決定出場線為內標差線/外標差線？
-        #6.vband外穿越內標差線
 
         #<開盤跳開>
         if(f.xts$time[i] ==845)
@@ -189,11 +192,6 @@ for(i in my.period:my.row)
         #設定預設值
         f.xts$signal[i] <-f.xts$signal[i-1] 
         f.xts$cr.line[i] <-f.xts$cr.line[i-1] 
-        #if(coredata(f.xts$cr.line[i-1]) !=0
-        #   && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
-        #{f.xts$crsub.line[i] <- f.xts$cr.line[i]
-        #        }else{f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
-        #                }
 
         ##1.產生多空進場線
         ####k同時穿越同向內外標差線
@@ -210,12 +208,7 @@ for(i in my.period:my.row)
                 {
                         f.xts$cr.line[i] <- max(f.xts$section.high[i-1],
                                                 f.xts$upper.line[i-1]) #紀錄進場點，正負表多空策略
-        ####階梯進出場線 
-        }#else if(f.xts$cr.line[i] >0
-         #               && f.xts$ex.upper.cross[i-1] ==-1)
-         #       {f.xts$crsub.line[i] <- f.xts$ex.upper.line[i-1]*pn(f.xts$cr.line[i])
-
-         #       }
+        }
 
 
         if(f.xts$lower.cross[i-1] ==-1                           
@@ -229,11 +222,7 @@ for(i in my.period:my.row)
                 {
                         f.xts$cr.line[i] <- min(f.xts$section.low[i-1]*-1,
                                                 f.xts$lower.line[i-1])
-        }#else if(f.xts$cr.line[i] <0
-         #               && f.xts$ex.lower.cross[i-1] ==1)
-         #       {f.xts$crsub.line[i] <- f.xts$ex.lower.line[i-1]*pn(f.xts$cr.line[i])
-
-         #       }
+        }
 
         #過濾重複產生之同向進場線
         if((pn(f.xts$cr.line[i]) ==pn(f.xts$cr.line[i-1]))
@@ -251,20 +240,35 @@ for(i in my.period:my.row)
         ##預設值
         if(coredata(f.xts$cr.line[i-1]) !=0
            && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
-        {f.xts$crsub.line[i] <- f.xts$cr.line[i]
-                }else{f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
+        {
+                f.xts$crsub.line[i] <- f.xts$cr.line[i]
+                f.xts$cl.line[i] <- f.xts$cr.line[i]
+
+                }else{
+                        f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
+                        f.xts$cl.line[i] <- f.xts$cl.line[i-1]
+                        }
+        ##估算
+        if(f.xts$cr.line[i] >0)
+        {
+                if(f.xts$uupper.cross[i-1] ==-1)
+                {f.xts$crsub.line[i] <- f.xts$uupper.line[i-1]*pn(f.xts$cr.line[i])
+                        }
+                if(f.xts$ex.upper.cross[i] ==-1)
+                {f.xts$cl.line[i] <- f.xts$ex.upper.line[i]*pn(f.xts$cr.line[i])
                         }
 
-        if(f.xts$cr.line[i] >0
-                && f.xts$ex.upper.cross[i-1] ==-1)
-        {f.xts$crsub.line[i] <- f.xts$ex.upper.line[i-1]*pn(f.xts$cr.line[i])
-                }
+        }
 
-        if(f.xts$cr.line[i] <0
-                && f.xts$ex.lower.cross[i-1] ==1)
-        {f.xts$crsub.line[i] <- f.xts$ex.lower.line[i-1]*pn(f.xts$cr.line[i])
-
-                }
+        if(f.xts$cr.line[i] <0)
+        {
+                if(f.xts$llower.cross[i-1] ==1)
+                {f.xts$crsub.line[i] <- f.xts$llower.line[i-1]*pn(f.xts$cr.line[i])
+                        }
+                if(f.xts$ex.lower.cross[i] ==1)
+                {f.xts$cl.line[i] <- f.xts$ex.lower.line[i]*pn(f.xts$cr.line[i])
+                        }
+        }
 
 
         #2.檢查是否穿越
@@ -423,18 +427,19 @@ repeat
         graphics.off()
 
         chartSeries(folio.count[,c(1:5)], up.col='red', dn.col='green'
-                    ,TA=list("addTA(abs(folio.count$cr.line),on=1,lwd=2,col='orange')"
+                    ,TA=list("addTA(abs(folio.count$cr.line),on=1,lwd=3,col='orange')"
                              ,"addTA(abs(folio.count$crsub.line),on=1,lwd=1,col='orange')"
+                             ,"addTA(abs(folio.count$cl.line),on=1,lwd=1,col='orange',lty='dashed')"
                              ,"addTA(folio.count$upper.line,on=1,col='gray')"
                              ,"addTA(folio.count$lower.line,on=1,col='gray')"
-                             ,"addTA(folio.count$uupper.line,on=1,col='red',lty='dashed')"
-                             ,"addTA(folio.count$llower.line,on=1,col='red',lty='dashed')"
+                             ,"addTA(folio.count$uupper.line,on=1,col='red')"
+                             ,"addTA(folio.count$llower.line,on=1,col='red')"
                              ,"addTA(folio.count$ex.upper.line,on=1,col='gray',lty='dashed')"
                              ,"addTA(folio.count$ex.lower.line,on=1,col='gray',lty='dashed')"
                              ,"addTA(folio.count$base.line,on=1,col='yellow')"
-                             ,"addTA(folio.count$section.high,on=1,col='red')"
-                             ,"addTA(folio.count$section.low,on=1,col='green')"
-                             ,"addTA((folio.count$section.low+folio.count$section.high)*0.5,on=1,col='gray',lty='dashed')"
+                             ,"addTA(folio.count$section.high,on=1,col='darkred')"
+                             ,"addTA(folio.count$section.low,on=1,col='darkgreen')"
+                             #,"addTA((folio.count$section.low+folio.count$section.high)*0.5,on=1,col='gray',lty='dashed')"
                              ,"addTA(folio.hist.cumfolio,col=c('red','green'),type=c('h','h'))"
                              ,"addTA(merge(folio.hist.band,folio.count$signal*0.5,sd.ratio,sd.ratio*-1),col=c('red','green','orange','darkred','darkgreen'),type=c('h','h','l','l','l'))"
                              ,"addTA(merge(folio.count$drawdown,
