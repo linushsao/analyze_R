@@ -7,7 +7,7 @@ to.hist <- function(x)
         return(merge(to.positive,to.negitive))
 }
 
-to.cross <- function(ohcl,base.line)
+to.cross <- function(ohcl,base.line,mode=1)
 {
         op=1
         hi=2
@@ -15,14 +15,27 @@ to.cross <- function(ohcl,base.line)
         cl=4
         result=0
 
-        if(ohcl[,op]<base.line
-                && ohcl[,hi]>base.line
-                && coredata(ohcl[,cl])>coredata(ohcl[,op]))
-        {result=1 }
-        if(ohcl[,op]>base.line
-                && ohcl[,lo]<base.line
-                && coredata(ohcl[,cl])<coredata(ohcl[,op]))
-        {result=-1 }
+        if(mode==1)
+        {
+                if(ohcl[,op]<base.line
+                   && ohcl[,hi]>base.line
+                   && coredata(ohcl[,cl])>coredata(ohcl[,op]))
+                {result=1 }
+                if(ohcl[,op]>base.line
+                   && ohcl[,lo]<base.line
+                   && coredata(ohcl[,cl])<coredata(ohcl[,op]))
+                {result=-1 }
+
+        }else if(mode==2)
+        {
+                if(ohcl[,op]<base.line
+                   && ohcl[,hi]>base.line)
+                {result=1 }
+                if(ohcl[,op]>base.line
+                   && ohcl[,lo]<base.line)
+                {result=-1 }
+
+        }
 
         return(result)
 }

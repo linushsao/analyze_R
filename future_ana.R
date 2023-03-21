@@ -150,8 +150,12 @@ for(i in my.period:my.row)
         f.xts$uupper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$uupper.line[i])
         f.xts$llower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$llower.line[i])
         ##穿越極值線
-        f.xts$ex.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$ex.upper.line[i])
-        f.xts$ex.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$ex.lower.line[i])
+        f.xts$ex.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],
+                                        base.line=f.xts$ex.upper.line[i],
+                                        mode=2)
+        f.xts$ex.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],
+                                        base.line=f.xts$ex.lower.line[i],
+                                        mode=2)
 
         #[進場條件]
         #<多空外穿越內標差線>
