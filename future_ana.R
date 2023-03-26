@@ -1,10 +1,14 @@
 #
-#1.前k棒外穿越定態線
-#2.下根k棒穿越前K棒外極值<基本進場線>後[進場]
-#3.反向回檔躍遷線後[出場]，該點同時為<再次進場線>
-#4.再次外穿越<再次進場線>後[進場]
-#5.再次外穿越極值線後[出場]
+#if(外穿越(K,定態線)& pn(穿越點)!=pn(穿越點)[1]){進場線 <- 外極值(K)}
+#if(外穿越(K,進場線)){建倉()}
+#repeat{
+#       if(內回檔(K,躍遷線)){
+#               平倉()
+#               續場線 <- 穿越點(K,躍遷線)
+#               }
 #
+#        if(外穿越(K,續場線)){建倉()}
+#}
 
 rm(list=ls())
 #
@@ -51,17 +55,21 @@ my.period=38
 my.section=10
 sd.ratio=0.675
 sd.ratioExtra=1.645
-sd.ratioBorder=2
+#sd.ratioBorder=1.959
+sd.ratioOutter=2.575
 
 f.period     <- readline(prompt=paste0("period <",my.period,">? "))
 f.section    <- readline(prompt=paste0("section<",my.section,">? "))
 f.ratio      <- readline(prompt=paste0("ratio<",sd.ratio,">? "))
 f.ratioExtra <- readline(prompt=paste0("ratioExtra<",sd.ratioExtra,">? "))
+#f.ratioBorder <- readline(prompt=paste0("ratioBorder<",sd.ratioBorder,">? "))
+f.ratioOutter <- readline(prompt=paste0("ratioOutter<",sd.ratioOutter,">? "))
 
 if(f.period !=""){my.period <- as.numeric(f.period)}
 if(f.section !=""){my.section <- as.numeric(f.section)}
 if(f.ratio !=""){sd.ratio <- as.numeric(f.ratio)}
 if(f.ratioExtra !=""){sd.ratioExtra <- as.numeric(f.ratioExtra)}
+if(f.ratioOutter !=""){sd.ratioOutter <- as.numeric(f.ratioOutter)}
 
 #基礎欄位初始化
 f.xts$signal <- 0
@@ -80,13 +88,16 @@ f.xts$upper.line <- 0
 f.xts$lower.line <- 0
 f.xts$uupper.line <- 0 
 f.xts$llower.line <- 0
-f.xts$ex.upper.line <- 0 
-f.xts$ex.lower.line <- 0
+#f.xts$ex.upper.line <- 0 
+#f.xts$ex.lower.line <- 0
+f.xts$ot.upper.line <- 0 
+f.xts$ot.lower.line <- 0
+
 
 f.xts$if.cross <- 0
 f.xts$cr.line <- 0 #進場線
 f.xts$crsub.line <- 0 #再次進場線
-f.xts$cl.line <- 0 #出場線
+f.xts$crot.line <- 0 #ot出場線
 
 f.xts$crossing.crline <- 0 
 
@@ -94,8 +105,10 @@ f.xts$upper.cross <- 0
 f.xts$lower.cross <- 0
 f.xts$uupper.cross <- 0 
 f.xts$llower.cross <- 0
-f.xts$ex.upper.cross <- 0 
-f.xts$ex.lower.cross <- 0
+#f.xts$ex.upper.cross <- 0 
+#f.xts$ex.lower.cross <- 0
+f.xts$ot.upper.cross <- 0 
+f.xts$ot.lower.cross <- 0
 
 f.xts$section.high <- 0
 f.xts$section.low <- 0
@@ -124,8 +137,10 @@ for(i in my.period:my.row)
         f.xts$lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratio
         f.xts$uupper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioExtra
         f.xts$llower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioExtra
-        f.xts$ex.upper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioBorder
-        f.xts$ex.lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioBorder
+        #f.xts$ex.upper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioBorder
+        #f.xts$ex.lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioBorder
+        f.xts$ot.upper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioOutter
+        f.xts$ot.lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioOutter
 
         #計算區間極值線
         section.high <- c(f.xts$high[(i-my.section):(i-1)])
@@ -150,11 +165,18 @@ for(i in my.period:my.row)
         f.xts$uupper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$uupper.line[i])
         f.xts$llower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$llower.line[i])
         ##穿越極值線
-        f.xts$ex.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],
-                                        base.line=f.xts$ex.upper.line[i],
+        #f.xts$ex.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],
+        #                                base.line=f.xts$ex.upper.line[i],
+        #                                mode=2)
+        #f.xts$ex.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],
+        #                                base.line=f.xts$ex.lower.line[i],
+        #                                mode=2)
+        ##穿越ot線
+        f.xts$ot.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],
+                                        base.line=f.xts$ot.upper.line[i],
                                         mode=2)
-        f.xts$ex.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],
-                                        base.line=f.xts$ex.lower.line[i],
+        f.xts$ot.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],
+                                        base.line=f.xts$ot.lower.line[i],
                                         mode=2)
 
         #[進場條件]
@@ -197,7 +219,7 @@ for(i in my.period:my.row)
         f.xts$signal[i] <-f.xts$signal[i-1] 
         f.xts$cr.line[i] <-f.xts$cr.line[i-1] 
 
-        ##1.產生多空進場線
+        ##1.產生多空主(進)場線
         ####k同時穿越同向內外標差線
         if(f.xts$upper.cross[i-1] ==1                           
                 && f.xts$uupper.cross[i-1] ==1)
@@ -240,49 +262,99 @@ for(i in my.period:my.row)
                 )
         {f.xts$cr.line[i]  <-f.xts$cr.line[i-1]}
 
-        #階梯線
+        #產生階梯線
         ##預設值
+        ###出現新的反向主場線->重設階梯線=主場線
         if(coredata(f.xts$cr.line[i-1]) !=0
-           && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i]))
+                && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i])
+                && coredata(f.xts$cr.line[i-1])*coredata(f.xts$cr.line[i])<0
+                )
         {
                 f.xts$crsub.line[i] <- f.xts$cr.line[i]
-                f.xts$cl.line[i] <- f.xts$cr.line[i]
-
+                f.xts$crot.line[i]  <- f.xts$cr.line[i]
+                ###否則階梯線同前值
                 }else{
                         f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
-                        f.xts$cl.line[i] <- f.xts$cl.line[i-1]
+                        f.xts$crot.line[i] <- f.xts$crot.line[i-1]
                         }
-        ##估算
+        ##估算階梯線
+        ###多方主場線期間
         if(f.xts$cr.line[i] >0)
         {
-                if(f.xts$uupper.cross[i-1] ==-1)
-                {f.xts$crsub.line[i] <- f.xts$uupper.line[i-1]*pn(f.xts$cr.line[i])
+                #回檔躍遷線，則以該躍遷點為基準產生階梯線
+                if(f.xts$uupper.cross[i-1] ==-1
+                        || (f.xts$uupper.cross[i-2] ==1
+                                && f.xts$close[i-1] >f.xts$uupper.line[i-1])
+                        || (f.xts$close[i-1] <f.xts$open[i-1]
+                                && f.xts$open[i-1] >f.xts$ot.upper.line[i-1]
+                                && f.xts$low[i-1] <f.xts$ot.upper.line[i-1]
+                                )
+                )
+                {
+                        f.xts$crsub.line[i] <- f.xts$high[i-1]*pn(f.xts$cr.line[i])
+
                         }
-                if(f.xts$ex.upper.cross[i] ==-1)
-                {f.xts$cl.line[i] <- f.xts$ex.upper.line[i]*pn(f.xts$cr.line[i])
-                        }
+                #外穿越ot線，則以該外穿越點為基準產生階梯線
+                #if(f.xts$ot.upper.cross[i-1] ==1)
+                #{f.xts$crot.line[i] <- f.xts$high[i-1]*pn(f.xts$cr.line[i])
+                #        }
+
+                #if(f.xts$open[i-1] <f.xts$ot.upper.line[i-1]
+                #                        && f.xts$high[i-1] >f.xts$ot.upper.line[i-1]
+                #                        && f.xts$close[i-1]<=f.xts$ot.upper.line[i-1])
+                #{f.xts$crot.line[i] <- f.xts$ot.upper.line[i-1]*pn(f.xts$cr.line[i])
+                #        }
 
         }
 
         if(f.xts$cr.line[i] <0)
         {
-                if(f.xts$llower.cross[i-1] ==1)
-                {f.xts$crsub.line[i] <- f.xts$llower.line[i-1]*pn(f.xts$cr.line[i])
+                if(f.xts$llower.cross[i-1] ==1
+                        || (f.xts$llower.cross[i-2] ==-1
+                                && f.xts$close[i-1] >f.xts$llower.line[i-1])
+                        || (f.xts$close[i-1] >f.xts$open[i-1]
+                                && f.xts$open[i-1] <f.xts$ot.lower.line[i-1]
+                                && f.xts$high[i-1] >f.xts$ot.lower.line[i-1])
+
+                )
+                {
+                        f.xts$crsub.line[i] <- f.xts$low[i-1]*pn(f.xts$cr.line[i])
+
                         }
-                if(f.xts$ex.lower.cross[i] ==1)
-                {f.xts$cl.line[i] <- f.xts$ex.lower.line[i]*pn(f.xts$cr.line[i])
-                        }
+                #外穿越ot線，則以該外穿越點為基準產生階梯線
+                #if(f.xts$ot.lower.cross[i-1] ==-1)
+                #{f.xts$crot.line[i] <- f.xts$low[i-1]*pn(f.xts$cr.line[i])
+                #        }
+                
+                #if(f.xts$open[i-1] >f.xts$ot.lower.line[i-1]
+                #                        && f.xts$low[i-1] <f.xts$ot.lower.line[i-1]
+                #                        && f.xts$close[i-1]>=f.xts$ot.lower.line[i-1])
+                #{f.xts$crot.line[i] <- f.xts$ot.lower.line[i-1]*pn(f.xts$cr.line[i])
+                #        }
+
         }
 
-
-        #2.檢查是否穿越
+        #檢查產生之階梯線
+        if((f.xts$crsub.line[i] >0
+                        && f.xts$crsub.line[i-1] >0
+                        && coredata(f.xts$crsub.line[i]) <coredata(f.xts$crsub.line[i-1]))
+                || (f.xts$crsub.line[i] <0
+                        && f.xts$crsub.line[i-1] <0
+                        && abs(coredata(f.xts$crsub.line[i])) <abs(coredata(f.xts$crsub.line[i-1])))
+                )
+        {f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
+                }
+        
+        #產生估計報酬率所需之進出場多空訊號
+        ##檢查k棒是否穿越主場線
         check.CrCrossing  <- to.cross(f.xts[i,c(1:5)],base.line=abs(f.xts$cr.line[i]))
         f.xts$crossing.crline[i] <- ifelse(check.CrCrossing !=0
                                            , check.CrCrossing
                                            , f.xts$crossing.crline[i-1] )
 
-        if((f.xts$crossing.crline[i]*f.xts$cr.line[i]>0
-                        || f.xts$openjump[i] )) #正負符號同向，代表正確之多空穿越方向
+        ###正負符號同向，代表正確之多空穿越方向
+        if((f.xts$crossing.crline[i]*f.xts$cr.line[i]>0))
+                        #|| f.xts$openjump[i] )) 
         {
                 if(high.over && f.xts$crossing.crline[i] ==1 ){f.xts$signal[i] <- 1}
                 if(low.under && f.xts$crossing.crline[i] ==-1 ){f.xts$signal[i] <- -1}
@@ -339,7 +411,7 @@ repeat
                 f.period.start <- as.Date(f.period.start)
                 if( f.period.stop =="")
                 {f.period.stop  <- f.period.start +days(as.numeric(f.section))
-                }
+                        }else{f.period.stop <- as.Date(f.period.stop)}
 
                 if(as.numeric(f.period.jump) !=0)
                 {
@@ -360,7 +432,8 @@ repeat
                 print(f.period)
         
                 getans <- readline(prompt="ready to virtualize(Y/n)? ") 
-                if(getans =='' || getans =='Y'){break}
+                if(getans =='' || getans =='Y'
+                        || getans =='y'){break}
                 
         }
         #後續計算欄位重設
@@ -369,10 +442,11 @@ repeat
         #tail(folio.count)
         #
         folio.count$folio <- folio.count$rate *folio.count$signal
+        folio.count$drawdown <-my.ddm(folio.count$folio) 
         folio.count$cumfolio <- cumprod(1+folio.count$folio)
-        folio.count$cumfolio.max <- cummax(folio.count$cumfolio)
+        #folio.count$cumfolio.max <- cummax(folio.count$cumfolio)
         #drawdown
-        folio.count$drawdown <- (folio.count$cumfolio -folio.count$cumfolio.max)/folio.count$cumfolio.max
+        #folio.count$drawdown <- (folio.count$cumfolio -folio.count$cumfolio.max)/folio.count$cumfolio.max
 
         folio.count$sma.drawdown <- SMA(folio.count$drawdown, my.period)
         folio.count$max.drawdown <- 0
@@ -432,18 +506,18 @@ repeat
 
         chartSeries(folio.count[,c(1:5)], up.col='red', dn.col='green'
                     ,TA=list("addTA(abs(folio.count$cr.line),on=1,lwd=3,col='orange')"
-                             ,"addTA(abs(folio.count$crsub.line),on=1,lwd=1,col='orange')"
-                             ,"addTA(abs(folio.count$cl.line),on=1,lwd=1,col='orange',lty='dashed')"
+                             ,"addTA(abs(folio.count$crsub.line),on=1,lwd=2,col='orange')"
+                             #,"addTA(abs(folio.count$crot.line),on=1,lwd=2,col='pink')"
+                             ,"addTA(folio.count$ot.upper.line,on=1,col='gray')"
+                             ,"addTA(folio.count$ot.lower.line,on=1,col='gray')"
+
                              ,"addTA(folio.count$upper.line,on=1,col='gray')"
                              ,"addTA(folio.count$lower.line,on=1,col='gray')"
-                             ,"addTA(folio.count$uupper.line,on=1,col='red')"
-                             ,"addTA(folio.count$llower.line,on=1,col='red')"
-                             ,"addTA(folio.count$ex.upper.line,on=1,col='gray',lty='dashed')"
-                             ,"addTA(folio.count$ex.lower.line,on=1,col='gray',lty='dashed')"
+                             ,"addTA(folio.count$uupper.line,on=1,col='red',lty='dashed')"
+                             ,"addTA(folio.count$llower.line,on=1,col='red',lty='dashed')"
                              ,"addTA(folio.count$base.line,on=1,col='yellow')"
                              ,"addTA(folio.count$section.high,on=1,col='darkred')"
                              ,"addTA(folio.count$section.low,on=1,col='darkgreen')"
-                             #,"addTA((folio.count$section.low+folio.count$section.high)*0.5,on=1,col='gray',lty='dashed')"
                              ,"addTA(folio.hist.cumfolio,col=c('red','green'),type=c('h','h'))"
                              ,"addTA(merge(folio.hist.band,folio.count$signal*0.5,sd.ratio,sd.ratio*-1),col=c('red','green','orange','darkred','darkgreen'),type=c('h','h','l','l','l'))"
                              ,"addTA(merge(folio.count$drawdown,
