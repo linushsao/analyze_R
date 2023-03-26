@@ -285,25 +285,18 @@ for(i in my.period:my.row)
                 if(f.xts$uupper.cross[i-1] ==-1
                         || (f.xts$uupper.cross[i-2] ==1
                                 && f.xts$close[i-1] >f.xts$uupper.line[i-1])
-                        || (f.xts$close[i-1] <f.xts$open[i-1]
-                                && f.xts$open[i-1] >f.xts$ot.upper.line[i-1]
-                                && f.xts$low[i-1] <f.xts$ot.upper.line[i-1]
+                        || (f.xts$high[i-2] >f.xts$uupper.line[i-2]
+                                && f.xts$close[i-1] <f.xts$uupper.line[i-1]
+                                && f.xts$close[i-1] <f.xts$open[i-1])
+                        || (f.xts$close[i-1] >f.xts$open[i-1]
+                                && f.xts$open[i-1] <f.xts$ot.upper.line[i-1]
+                                && f.xts$high[i-1] >f.xts$ot.upper.line[i-1]
                                 )
                 )
                 {
                         f.xts$crsub.line[i] <- f.xts$high[i-1]*pn(f.xts$cr.line[i])
 
                         }
-                #外穿越ot線，則以該外穿越點為基準產生階梯線
-                #if(f.xts$ot.upper.cross[i-1] ==1)
-                #{f.xts$crot.line[i] <- f.xts$high[i-1]*pn(f.xts$cr.line[i])
-                #        }
-
-                #if(f.xts$open[i-1] <f.xts$ot.upper.line[i-1]
-                #                        && f.xts$high[i-1] >f.xts$ot.upper.line[i-1]
-                #                        && f.xts$close[i-1]<=f.xts$ot.upper.line[i-1])
-                #{f.xts$crot.line[i] <- f.xts$ot.upper.line[i-1]*pn(f.xts$cr.line[i])
-                #        }
 
         }
 
@@ -312,25 +305,18 @@ for(i in my.period:my.row)
                 if(f.xts$llower.cross[i-1] ==1
                         || (f.xts$llower.cross[i-2] ==-1
                                 && f.xts$close[i-1] >f.xts$llower.line[i-1])
-                        || (f.xts$close[i-1] >f.xts$open[i-1]
-                                && f.xts$open[i-1] <f.xts$ot.lower.line[i-1]
-                                && f.xts$high[i-1] >f.xts$ot.lower.line[i-1])
+                        || (f.xts$low[i-2] <f.xts$llower.line[i-2]
+                                && f.xts$close[i-1] >f.xts$llower.line[i-1]
+                                && f.xts$close[i-1] >f.xts$open[i-1])
+                        || (f.xts$close[i-1] <f.xts$open[i-1]
+                                && f.xts$open[i-1] >f.xts$ot.lower.line[i-1]
+                                && f.xts$low[i-1] <f.xts$ot.lower.line[i-1])
 
                 )
                 {
                         f.xts$crsub.line[i] <- f.xts$low[i-1]*pn(f.xts$cr.line[i])
 
                         }
-                #外穿越ot線，則以該外穿越點為基準產生階梯線
-                #if(f.xts$ot.lower.cross[i-1] ==-1)
-                #{f.xts$crot.line[i] <- f.xts$low[i-1]*pn(f.xts$cr.line[i])
-                #        }
-                
-                #if(f.xts$open[i-1] >f.xts$ot.lower.line[i-1]
-                #                        && f.xts$low[i-1] <f.xts$ot.lower.line[i-1]
-                #                        && f.xts$close[i-1]>=f.xts$ot.lower.line[i-1])
-                #{f.xts$crot.line[i] <- f.xts$ot.lower.line[i-1]*pn(f.xts$cr.line[i])
-                #        }
 
         }
 
@@ -340,11 +326,10 @@ for(i in my.period:my.row)
                         && coredata(f.xts$crsub.line[i]) <coredata(f.xts$crsub.line[i-1]))
                 || (f.xts$crsub.line[i] <0
                         && f.xts$crsub.line[i-1] <0
-                        && abs(coredata(f.xts$crsub.line[i])) <abs(coredata(f.xts$crsub.line[i-1])))
+                        && abs(coredata(f.xts$crsub.line[i])) >abs(coredata(f.xts$crsub.line[i-1])))
                 )
         {f.xts$crsub.line[i] <- f.xts$crsub.line[i-1]
                 }
-        
         #產生估計報酬率所需之進出場多空訊號
         ##檢查k棒是否穿越主場線
         check.CrCrossing  <- to.cross(f.xts[i,c(1:5)],base.line=abs(f.xts$cr.line[i]))
