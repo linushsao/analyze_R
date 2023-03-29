@@ -8,94 +8,189 @@ rm(list=ls())
 library(quantmod)
 library(PerformanceAnalytics)
 
-period <- "2022-01-01::2023-12-31"
-path <-"~/Downloads"
-main.path <-paste0(path, "/FIMTXN.TF.csv")
-sub.path <-paste0(path, "/FIZEN.TF.csv")
+m.path="~/src/analyze_R"
+lib.path=paste(m.path,"lib",sep="/")
+source(paste(lib.path,"misc.R",sep="/"))
+source(paste(lib.path,"dataFeed.R",sep="/"))
+source(paste(lib.path,"xq_tools.R",sep="/"))
 
-main.price <-read.csv(main.path, header=F)[,-c(1,2,4,5,11,12)]
-sub.price  <-read.csv(sub.path, header=F)[,-c(1,2,4,5,11,12)]
+#
+sd.ratioSTAT=0.675
+sd.ratioUNSTAT=1.645
+sd.ratioEXSTAT=2.575
+
+path <-"~/src/analyze_R/s.data"
+main.path <-paste(path, "recorder_1D_FIMTXN_1.TF.log.csv",sep="/")
+sub.path <-paste(path, "recorder_1D_FIZEN_1.TF.log.csv",sep="/")
+
+main.price <-read.csv(main.path, header=F)[-1,-c(1,3)]
+sub.price  <-read.csv(sub.path, header=F)[-1,-c(1,3)]
+
+col2numeric <- function(x){
+        for(i in 1:ncol(x)){
+                x[,i] <- as.numeric(x[,i])
+        }
+        return(x)
+}
+
 h.name <-c("date","open","high","low","close","volume")
 names(main.price) <-h.name
 names(sub.price) <-h.name
 head(main.price)
 head(sub.price)
 str(main.price)
+str(sub.price)
+class(main.price)
 
-main.index <-as.character(main.price$date)
-sub.index <-as.character(sub.price$date)
+main.price[,c(2:6)] <- col2numeric(main.price[,c(2:6)])
+sub.price[,c(2:6)] <- col2numeric(sub.price[,c(2:6)])
 
-main.xts <-xts(main.price, order.by=as.Date(main.index,"%Y%m%d"))[,-1]
-sub.xts <-xts(sub.price, order.by=as.Date(sub.index,"%Y%m%d"))[,-1]
+
+main.xts <-xts(main.price[,-1], order.by=as.Date(main.price$date,"%Y%m%d"))
+sub.xts <-xts(sub.price[,-1], order.by=as.Date(sub.price$date,"%Y%m%d"))
 head(main.xts,1)
 head(sub.xts,1)
-tail(main.xts$close,2)
-tail(sub.xts$close,2)
+tail(main.xts,2)
+tail(sub.xts,2)
 #price.TWII <-getSymbols("^TWII", auto.assign=F)
 #candleChart(a["2022-06-01::2023-12-31"], up.col="red", dn.col="green")
 #addBBands(n=20, sd=1)
-main.log <-log(main.xts$close)
-sub.log <-log(sub.xts$close)
-head(main.log)
-head(sub.log)
+main.xts$log <-log(main.xts$close)
+sub.xts$log <-log(sub.xts$close)
+head(main.xts)
+head(sub.xts)
 
-all.data <-na.omit(merge(main.xts$close,sub.xts$close,main.log,sub.log))
-names(all.data) <-c("m.close","s.close","m.log","s.log")
+all.data <-na.omit(merge(main.xts[,c(4,6)],sub.xts[,c(4,6)]))
+names(all.data) <-c("m.close","m.log","s.close","s.log")
 head(all.data,2)
 plot.zoo(all.data)
 
-main.price=50
-sub.price=500
+all.data$m.ret <- diff(all.data$m.log)
+all.data$s.ret <- diff(all.data$s.log)
+all.data <- na.omit(all.data)
+cor(all.data[,c(5,6)])
 
-main.ret <- diff(all.data$m.log)
-sub.ret <- diff(all.data$s.log)
-cor(merge(main.ret,sub.ret))
-
-names(main.ret) <- "m.ret"
-names(sub.ret) <- "s.ret"
-head(main.ret)
-head(sub.ret)
-
-all.data <-merge(all.data,main.ret,sub.ret)
-head(all.data,2)
-all.data <-na.omit(all.data)
-head(all.data,2)
 all.data$main.cum <-cumprod(1+all.data$m.ret)
 all.data$sub.cum <-cumprod(1+all.data$s.ret)
 
 all.data$diff.rcum <-all.data$sub.cum-all.data$main.cum
-head(all.data,1)
-par(mfrow=c(2,1))
-plot(all.data[,c(7,8)],col=c("black","red"))
-plot(all.data$diff.rcum,col="blue")
 
 len <- nrow(all.data)
 len
 
 sd.n <- 20
-
 all.data$diff.rcum.sma <- SMA(all.data$diff.rcum, sd.n)
+all.data$mclose.sma <- SMA(all.data$m.close,sd.n)
 all.data$sd <-rep(0,len)
+all.data$m.sd <-rep(0,len)
 all.data$band <-rep(0,len)
+all.data$cross.stat  <- rep(0,len)
+all.data$pt.line <- rep(0,len)
+
+head(all.data,1)
+par(mfrow=c(2,1))
+plot(all.data[,c(7,8)],col=c("black","red"))
+plot(all.data[,c(9,10)],col=c("blue","red"))
 
 for(i in c(sd.n:len))
 {
         m.start <- 1+(i-sd.n)
         m.end <- sd.n+(i-sd.n)
         all.data$sd[i] <- sd(all.data$diff.rcum[m.start:m.end])
+        all.data$m.sd[i] <- sd(all.data$m.close[m.start:m.end])
+
 }
 
 all.data <-all.data[-c(1:sd.n),]
 all.data$band <-(all.data$diff.rcum-all.data$diff.rcum.sma)/all.data$sd
+all.data$band.sma <- SMA(all.data$band,sd.n)
+all.data$m.close.sma <- SMA(all.data$m.close,sd.n)
+all.data$m.ret <- diff(all.data$m.log)
 
 head(all.data,2)
 tail(all.data,2)
 summary(all.data)
 
-
-plot.zoo(all.data[,c(7,8,9,12)])
+x11()
 summary(all.data)
+par(mfrow=c(2,1))
+plot(all.data[,c(7,8)],col=c("black","red"))
+plot(all.data$band.sma,col=c("blue","green"))
 
+all.data$uSTAT <- all.data$m.close.sma +sd.ratioSTAT*all.data$m.sd
+all.data$dSTAT <- all.data$m.close.sma -sd.ratioSTAT*all.data$m.sd
+all.data$u2STAT <- all.data$m.close.sma +sd.ratioUNSTAT*all.data$m.sd
+all.data$d2STAT <- all.data$m.close.sma -sd.ratioUNSTAT*all.data$m.sd
+all.data$exuSTAT <- all.data$m.close.sma +sd.ratioEXSTAT*all.data$m.sd
+all.data$exdSTAT <- all.data$m.close.sma -sd.ratioEXSTAT*all.data$m.sd
+
+summary(all.data)
+all.data <- na.omit(all.data)
+#all.data.hist <- to.hist(all.data$band.sma)
+head(all.data.hist,2)
+head(all.data,2)
+main.data <- na.omit(merge(main.xts[,c(1:5)],all.data[,c(2,5,15:24)]))
+head(main.data,2)
+
+m.len <- nrow(main.data)
+
+for(i in 3:m.len){
+        cross.up <-ifelse((main.data$band.sma[i-2]<0
+                           && main.data$band.sma[i-1]>0),
+                        1,0) 
+        cross.dn <-ifelse((main.data$band.sma[i-2]>0
+                           && main.data$band.sma[i-1]<0),
+                        -1,0) 
+        cross.status<- cross.up+cross.dn
+        if(cross.status ==0){
+                main.data$cross.stat[i] <- main.data$cross.stat[i-1]
+                }else{main.data$cross.stat[i] <- cross.up+cross.dn}
+
+        #預設值
+        main.data$pt.line[i] <- main.data$pt.line[i-1]
+        if(main.data$cross.stat[i-1]<=0
+                && main.data$cross.stat[i] >0
+                && coredata(main.data$high[i]) >coredata(main.data$pt.line[i-1])){
+                main.data$pt.line[i] <- ifelse(main.data$high[i] >main.data$m.close.sma[i],
+                                               main.data$high[i],
+                                                main.data$m.close.sma[i])         
+        }else if(main.data$cross.stat[i-1]>=0
+                && main.data$cross.stat[i] <0
+                && coredata(main.data$low[i]) <coredata(main.data$pt.line[i-1])){
+                main.data$pt.line[i] <- ifelse(main.data$low[i] <main.data$m.close.sma[i],
+                                               main.data$low[i],
+                                                main.data$m.close.sma[i])         
+                }
+
+}
+
+summary(main.data$pt.line)
+summary(main.data$cross.stat)
+head(main.data,2)
+tail(main.data,2)
+
+main.data$m.retscum <- cumprod(1 +(main.data$m.ret*main.data$cross.stat))-1
+summary(main.data$m.retscum)
+
+bandSMA.hist <- to.hist(main.data$band.sma)
+retscum.hist <- to.hist(main.data$m.retscum)
+
+chartSeries(main.data[,c(1:5)]["2022-01-01::2022-06-30"],
+            up.col='red',
+            dn.col='green',
+                TA=list("addTA(main.data$m.close.sma,col='yellow',on=1,lwd=2)",
+                "addTA(main.data$uSTAT,col='red',on=1,lty='dashed')",
+                "addTA(main.data$dSTAT,col='green',on=1,lty='dashed')",
+                "addTA(main.data$u2STAT,col='red',on=1)",
+                "addTA(main.data$d2STAT,col='green',on=1)",
+                "addTA(main.data$exuSTAT,col='red',on=1,lty='dashed')",
+                "addTA(main.data$exdSTAT,col='green',on=1,lty='dashed')",
+                "addTA(main.data$pt.line,col='white',on=1)",
+                "addTA(bandSMA.hist,col=c('red','green'),type=c('h','h'))",
+                "addTA(retscum.hist,col=c('red','green'),type=c('h','h'))"
+
+                )
+)
 #<<產生策略之開平倉訊號>>
 all.data$signal <-rep(0,nrow(all.data))
 head(all.data,2)
