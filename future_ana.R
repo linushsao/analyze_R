@@ -23,30 +23,33 @@ source(paste(lib.path,"dataFeed.R",sep="/"))
 source(paste(lib.path,"xq_tools.R",sep="/"))
 
 #
-getans<- readline(prompt="(f)uture/(s)tock for research(f)")
-freq.data <- ''
-if(getans =='' || getans =='f')
+default.f.id <- "FIMTXN"
+pre.f.id <- get.conf(name='f.id')
+
+if(is.null(pre.f.id)){pre.f.id <-default.f.id }
+f.id<- readline(prompt=paste0("ID for research(default: ",pre.f.id ," )"))
+if(f.id==""){f.id <- pre.f.id}
+
+if(f.id ==default.f.id)
 {
-        freq.data <- 'min'
         f.raw <- data.Mgr(x=2)#30分k期貨
         f.index <- datetime2xts(f.raw$date,f.raw$time+1)
         f.xts <- xts(f.raw[,-c(1:2)],order.by=f.index)
-        print("資料類型：小台期貨")
 }else{
-        freq.data <- 'day'
-        f.raw <- data.Mgr(x=3)#日線股票
-        f.xts <- xts(f.raw[,-1],order.by=as.Date(f.raw[,1]))
+        f.raw <- getSymbols(f.id,auto.assign=F)[,-6]
+        f.xts <- f.raw
         names(f.xts) <- c('open','high','low','close','volume')
-        head(f.raw)
-        head(f.xts)
-        print("資料類型：日線股票")
+        #str(f.raw)
+        #head(f.raw)
+        #summary(f.xts)
+        #head(f.xts,2)
+} 
 
-}
-
-head(f.raw)
-head(f.xts)
-summary(f.xts)
-nrow(f.xts)
+set.conf(name='f.id',value=f.id)
+#head(f.raw)
+#head(f.xts)
+#summary(f.xts)
+#nrow(f.xts)
 
 #[策略估算]
 ##預設基本參數
@@ -55,14 +58,12 @@ my.period=38
 my.section=10
 sd.ratio=0.675
 sd.ratioExtra=1.645
-#sd.ratioBorder=1.959
 sd.ratioOutter=2.575
 
 f.period     <- readline(prompt=paste0("period <",my.period,">? "))
 f.section    <- readline(prompt=paste0("section<",my.section,">? "))
 f.ratio      <- readline(prompt=paste0("ratio<",sd.ratio,">? "))
 f.ratioExtra <- readline(prompt=paste0("ratioExtra<",sd.ratioExtra,">? "))
-#f.ratioBorder <- readline(prompt=paste0("ratioBorder<",sd.ratioBorder,">? "))
 f.ratioOutter <- readline(prompt=paste0("ratioOutter<",sd.ratioOutter,">? "))
 
 if(f.period !=""){my.period <- as.numeric(f.period)}
@@ -88,8 +89,6 @@ f.xts$upper.line <- 0
 f.xts$lower.line <- 0
 f.xts$uupper.line <- 0 
 f.xts$llower.line <- 0
-#f.xts$ex.upper.line <- 0 
-#f.xts$ex.lower.line <- 0
 f.xts$ot.upper.line <- 0 
 f.xts$ot.lower.line <- 0
 
@@ -105,8 +104,6 @@ f.xts$upper.cross <- 0
 f.xts$lower.cross <- 0
 f.xts$uupper.cross <- 0 
 f.xts$llower.cross <- 0
-#f.xts$ex.upper.cross <- 0 
-#f.xts$ex.lower.cross <- 0
 f.xts$ot.upper.cross <- 0 
 f.xts$ot.lower.cross <- 0
 
@@ -121,7 +118,6 @@ head(f.xts)
 tail(f.xts)
 my.row
 
-######################策略區塊-->
 #產生基礎指標線資料
 print("產生基礎指標線資料")
 for(i in my.period:my.row)
@@ -137,8 +133,6 @@ for(i in my.period:my.row)
         f.xts$lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratio
         f.xts$uupper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioExtra
         f.xts$llower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioExtra
-        #f.xts$ex.upper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioBorder
-        #f.xts$ex.lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioBorder
         f.xts$ot.upper.line[i] <- f.xts$base.line[i] + f.xts$sd[i]*sd.ratioOutter
         f.xts$ot.lower.line[i] <- f.xts$base.line[i] - f.xts$sd[i]*sd.ratioOutter
 
@@ -164,13 +158,6 @@ for(i in my.period:my.row)
         ##穿越躍遷線
         f.xts$uupper.cross[i]  <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$uupper.line[i])
         f.xts$llower.cross[i] <- to.cross(f.xts[i,c(1:5)],base.line=f.xts$llower.line[i])
-        ##穿越極值線
-        #f.xts$ex.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],
-        #                                base.line=f.xts$ex.upper.line[i],
-        #                                mode=2)
-        #f.xts$ex.lower.cross[i] <- to.cross(f.xts[i,c(1:5)],
-        #                                base.line=f.xts$ex.lower.line[i],
-        #                                mode=2)
         ##穿越ot線
         f.xts$ot.upper.cross[i]  <- to.cross(f.xts[i,c(1:5)],
                                         base.line=f.xts$ot.upper.line[i],
@@ -198,12 +185,10 @@ for(i in my.period:my.row)
         if(f.xts$time[i] ==845)
         {
                 #開盤反向外穿越外標差線
-                if(#f.xts$close[i-1]>f.xts$base.line[i-1]
-                        f.xts$close[i-1]>f.xts$base.line[i-1]
+                if(f.xts$close[i-1]>f.xts$base.line[i-1]
                         && f.xts$open[i]<f.xts$base.line[i])
                 {f.xts$openjump[i] =-1}
-                if(#f.xts$close[i-1]<f.xts$base.line[i-1]
-                        f.xts$close[i-1]<f.xts$upper.line[i-1]
+                if(f.xts$close[i-1]<f.xts$upper.line[i-1]
                         && f.xts$open[i]>f.xts$base.line[i])
                 {f.xts$openjump[i] =1}
         }
@@ -267,7 +252,6 @@ for(i in my.period:my.row)
         ###出現新的反向主場線->重設階梯線=主場線
         if(coredata(f.xts$cr.line[i-1]) !=0
                 && coredata(f.xts$cr.line[i-1]) !=coredata(f.xts$cr.line[i])
-                && coredata(f.xts$cr.line[i-1])*coredata(f.xts$cr.line[i])<0
                 )
         {
                 f.xts$crsub.line[i] <- f.xts$cr.line[i]
@@ -339,20 +323,18 @@ for(i in my.period:my.row)
 
         ###正負符號同向，代表正確之多空穿越方向
         if((f.xts$crossing.crline[i]*f.xts$cr.line[i]>0))
-                        #|| f.xts$openjump[i] )) 
         {
                 if(high.over && f.xts$crossing.crline[i] ==1 ){f.xts$signal[i] <- 1}
                 if(low.under && f.xts$crossing.crline[i] ==-1 ){f.xts$signal[i] <- -1}
         }
 }
 
-######################策略區塊<--
 #head(f.xts)
 #tail(f.xts)
 #summary(f.xts)
-save.image(file=paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
+save.image(file=paste0(m.path,"/RData/",f.id,"_xq_data.RData"))
 print("完成作業空間儲存...")
-load(paste0(m.path,"/RData/",freq.data,"_xq_data.RData"))
+load(paste0(m.path,"/RData/",f.id,"_xq_data.RData"))
 
 #估算區間獲利率
 f.index <- index(f.xts) #取出日期時間
@@ -363,10 +345,8 @@ f.period.default.start=as.Date(f.index[1], format="%Y%m%d")
 
 repeat
 {
-
         repeat
         {
-
                 repeat
                 {
                         f.period.start <- readline(prompt=paste0("period start<",
@@ -429,9 +409,6 @@ repeat
         folio.count$folio <- folio.count$rate *folio.count$signal
         folio.count$drawdown <-my.ddm(folio.count$folio) 
         folio.count$cumfolio <- cumprod(1+folio.count$folio)
-        #folio.count$cumfolio.max <- cummax(folio.count$cumfolio)
-        #drawdown
-        #folio.count$drawdown <- (folio.count$cumfolio -folio.count$cumfolio.max)/folio.count$cumfolio.max
 
         folio.count$sma.drawdown <- SMA(folio.count$drawdown, my.period)
         folio.count$max.drawdown <- 0
@@ -492,7 +469,6 @@ repeat
         chartSeries(folio.count[,c(1:5)], up.col='red', dn.col='green'
                     ,TA=list("addTA(abs(folio.count$cr.line),on=1,lwd=3,col='orange')"
                              ,"addTA(abs(folio.count$crsub.line),on=1,lwd=2,col='orange')"
-                             #,"addTA(abs(folio.count$crot.line),on=1,lwd=2,col='pink')"
                              ,"addTA(folio.count$ot.upper.line,on=1,col='gray')"
                              ,"addTA(folio.count$ot.lower.line,on=1,col='gray')"
 
@@ -501,8 +477,6 @@ repeat
                              ,"addTA(folio.count$uupper.line,on=1,col='red',lty='dashed')"
                              ,"addTA(folio.count$llower.line,on=1,col='red',lty='dashed')"
                              ,"addTA(folio.count$base.line,on=1,col='yellow')"
-                             ,"addTA(folio.count$section.high,on=1,col='darkred')"
-                             ,"addTA(folio.count$section.low,on=1,col='darkgreen')"
                              ,"addTA(folio.hist.cumfolio,col=c('red','green'),type=c('h','h'))"
                              ,"addTA(merge(folio.hist.band,folio.count$signal*0.5,sd.ratio,sd.ratio*-1),col=c('red','green','orange','darkred','darkgreen'),type=c('h','h','l','l','l'))"
                              ,"addTA(merge(folio.count$drawdown,
