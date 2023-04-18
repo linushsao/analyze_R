@@ -4,6 +4,18 @@
 #init
 rm(list=ls())
 #通用函式
+get.buildINFO <- function(x){
+
+        result <- NULL
+
+        id <- 0
+        for(i in 1:length(build.symbol)){id <- i}
+        
+        result <- build.name[id]
+        return(result)
+
+}
+
 pos.check <- function(pos.x,pos.y,scr.size,map.x,map.y){
 
         if(pos.x >map.x){pos.x <- map.x}
@@ -21,9 +33,6 @@ screen.generator <- function(map,pos.x,pos.y,scr.size){
         map.y <- nrow(map)
         scr.playerX <- 0
         scr.playerY <- 0
-
-        a <-readline(prompt=paste(pos.y,pos.x,scr.playerY,scr.playerX))
-
 
         conorLU.x <- pos.x -offset.size
         conorLU.y <- pos.y -offset.size
@@ -79,7 +88,7 @@ screen.generator <- function(map,pos.x,pos.y,scr.size){
         }
        
         scr.map[scr.playerY,scr.playerX] <- player.symbol
-        a <-readline(prompt=paste(pos.y,pos.x,scr.playerY,scr.playerX))
+
         rownames(scr.map) <- rname
         colnames(scr.map) <- cname
 
@@ -138,6 +147,9 @@ player.data <- data.frame(
         train =0
 )
 
+build.symbol <- c('T')
+build.name <-   c('城鎮')
+
 monster.group <- c('史來姆','郊狼','大型毒蜘蛛','鬃狗','毒蠍子')
 cname <- c('hp','mp','sp','equ','att','lv','coin','train')
 
@@ -164,10 +176,10 @@ player.symbol='@'
 if (!file.exists(player.file)){
         print("第一次進入遊戲，初始化冒險世界及勇者資料...")
         Sys.sleep(1)
-        player.dataMGR(player.data,player.file,mo='w')
+        player.dataMGR(info=player.data,path=player.file,mo='w')
 
 }else{
-        player.data <- as.data.frame(t(player.dataMGR(path=player.file,mo='r')))
+        player.data <- player.dataMGR(path=player.file,mo='r')
         
 }
 
@@ -222,14 +234,35 @@ repeat{
                 map <- screen.generator(map.all,pos.x,pos.y,scr.size)
                 print(map)
                 print("你正往西走...")}
+        
+        if(getans =='look'){
+                
+                getans <- readline(prompt=paste0('觀察方向(l/j/m/i) '))
+
+                look.x <- pos.x
+                look.y <- pos.y
+                if(getans =='l'){look.x <- look.x+1}
+                if(getans =='j'){look.x <- look.x-1}
+                if(getans =='m'){look.y <- look.y+1}
+                if(getans =='i'){look.y <- look.y-1}
+                
+                getBuild <- get.buildINFO(map.all[look.y,look.x])
+                if(is.null(getBuild)){
+                        getans <- readline(prompt='看來沒啥特別的...')
+                }else{getans <- readline(paste0('你看到了',getBuild,' ...'))}
+
+        }
+
+
         if(getans =='cl'){
                 print("下次見，勇者ˇ...")
+                player.data<- c(hp,mp,sp,equ,att,lv,coin,train)
                 player.dataMGR(player.data,player.file,mo='w')
                 break
         }
 
         if(getans =='o'){print("儲存遊戲資料完成...")
-                player.data<- c(hp,mp,lv,coin,train)
+                player.data<- c(hp,mp,sp,equ,att,lv,coin,train)
                 player.dataMGR(player.data,player.file,mo='w')
 
         }
