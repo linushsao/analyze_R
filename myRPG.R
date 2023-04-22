@@ -6,6 +6,22 @@ rm(list=ls())
 #通用函式
 print('[SYS]載入通用函式...')
 
+df.lookup <- function(db=NULL,patten=NULL,index=NULL,output=NULL){
+
+        result <- NULL
+        for(i in 1:nrow(db)){
+                if(db[i,index]==patten){result <- db[i,output]}
+        }
+
+        return(result)
+}
+
+df.insertROW <- function(db=NULL,v=NULL){
+        
+        db<- na.omit(rbind(db,v))
+        rownames(db) <- NULL
+        return(db)
+}
 
 screen.operator <- function(mode='clear'){
 
@@ -38,24 +54,37 @@ player.pos.gen <- function(map.y,map.x,mode='world'){
 get.buildINFO <- function(y=NULL,x=NULL){
 
         result.df <- NULL
+        check.symbol <- map.curr[y,x]
 
-        for(i in 1:nrow(towns.main.data.curr)){
-                if(towns.main.data.curr$x[i] ==x
-                   && towns.main.data.curr$y[i] ==y){
+        for(i in 1:nrow(obj.data.curr)){
+                if(obj.data.curr$x[i] ==x
+                   && obj.data.curr$y[i] ==y){
                         result.df <- data.frame(
                                         id=i,
-                                        symbol=towns.main.data.curr$symbol[i],
-                                        name=paste0(towns.main.data.curr$type[i],towns.main.data.curr$name[i])
+                                        symbol=obj.data.curr$symbol[i],
+                                        name=paste0(obj.data.curr$type[i],obj.data.curr$name[i])
                         )
                         #names(result.df) <- c('id','name')
                 }        
+        }
+
+        if(is.null(result.df)){
+                for(i in 1:ncol(towns.material)){
+                        if(check.symbol==towns.material$symbol[i])
+                                result.df <- data.frame(
+                                                id=towns.material$id[i],
+                                                symbol=towns.material$symbol[i],
+                                                name=towns.material$name[i]
+                                )
+
+                }
+
         }
         
         return(result.df)
 
 }
 
-#pos.check <- function(pos.x,pos.y,move.x,move.y,scr.size,map.x,map.y){
 pos.check <- function(pos.x,pos.y,move.x,move.y,scr.size,map){
 
         map.x <- ncol(map)
@@ -76,8 +105,12 @@ pos.check <- function(pos.x,pos.y,move.x,move.y,scr.size,map){
                 pos.y <- 1
                 move.y <- 0
         #聚落/建築物檢查
-        }else if(check.symbol %in% towns.symbol 
-                || check.symbol %in% towns.build.store.{
+        #}else if(check.symbol %in% towns.def.symbol 
+        #        || check.symbol %in% towns.def.store.symbol){
+        }else if(check.symbol %in% towns.def.symbol 
+                || check.symbol %in% towns.def.obj$symbol
+                || check.symbol %in% towns.material$symbol){
+
                 move.x <- 0
                 move.y <- 0
         }
@@ -191,12 +224,11 @@ monster.gen <- function(lv){
         return(c(monster.lv,monster.hp,monster.train,monster.sp,monster.equ,monster.att))
 }
 
-#主程式
-
+#===================主程式=================
 #初始設定
 print('[SYS]產生世界初始設定...')
 
-map.all.file <- 'map.all.csv'
+world.map.file <- 'world.map.csv'
 player.file <- 'player.info.csv'
 player.data <- data.frame(
         hp =100,
@@ -213,91 +245,122 @@ monster.group <- c('史來姆','郊狼','大型毒蜘蛛','鬃狗','毒蠍子')
 cname <- c('hp','mp','sp','equ','att','lv','coin','train')
 
 #產生大地圖50x50
-#顯示範圍9x9
+##顯示範圍9x9
 map.x <- 51
 map.y <- 51
 scr.size <- 9
 
-#
-#產生大地圖
-map.all <- matrix(data=' ',nrow=map.x,ncol=map.y)
-map.all.name <- '地海世界'
-#產生城鎮資料
-##城鎮基本資料
-towns.num <- sample(1:5)[1] #城鎮數量
-towns.name <- c('幅雷亞','帕爾','威路','坎帕奧','雷諾瓦')
-towns.type <- c('城鎮')
-towns.symbol <- c('T')
-towns.len.x <- 11 #城鎮基本尺寸
-towns.len.y <- 11
-towns.main.data <- data.frame()
-
-towns.build.store.main.data <- array(' ',c(5,length(towns.build.store.symbol),towns.num))
-towns.build.store.map <- array(' ',c(towns.len.x,towns.len.y,towns.num))
-towns.build.store.type <- c('店舖')
-towns.build.store.symbol <- c('W','S','P')
-towns.build.store.name <- c('武器店','防具店','藥水店')
-towns.build.material <- data.frame(
-                entry='☐',
-                wall='∎',
-                tree='⁂',
-                door.left='◖',
-                door.right='◗'
-)
+world.map <- matrix(data=' ',nrow=map.x,ncol=map.y)
+world.map.name <- '地海世界'
+world.obj.data <- data.frame()#紀錄大地圖上之各種物件(城鎮，植物，地形...)座標及代表符號
+world.obj.type <- data.frame(
+                        town='T',
+                        cave='C'
+                )
+towns.num.limited <- 5 #大地圖城鎮上限數目
+obj.rowname <- c('type','name','y','x','symbol')#通用物件資料欄位
 
 ##產生城鎮資料
-for(i in 1:towns.num){
+###定義城鎮基本資料
+towns.def.num <- sample(1:towns.num.limited)[1] #城鎮數量
+towns.def.name <- c('幅雷亞','帕爾','威路','坎帕奧','雷諾瓦')
+towns.def.type <- c('城鎮')
+towns.def.symbol <- world.obj.type$town
+towns.def.len.x <- 11 #城鎮基本尺寸
+towns.def.len.y <- 11
+
+#towns.def.store.type <- c('店舖')
+#towns.def.store.symbol <- c('W','S','P')
+#towns.def.store.name <- c('武器店','防具店','藥水店')
+
+towns.def.obj <- data.frame(symbol=NA,name=NA,type=NA)
+towns.def.obj <- df.insertROW(towns.def.obj,c('W','武器店','店舖'))
+towns.def.obj <- df.insertROW(towns.def.obj,c('S','防具店','店舖'))
+towns.def.obj <- df.insertROW(towns.def.obj,c('P','藥水店','店舖'))
+#towns.def.obj <- rbind(towns.def.obj,c('W','武器店','店舖'))
+#towns.def.obj <- rbind(towns.def.obj,c('S','防具店','店舖'))
+#towns.def.obj <- rbind(towns.def.obj,c('P','藥水店','店舖'))
+
+#產生空白城鎮地圖陣列
+#1.標記物件符號如城鎮(T)及座標位置
+towns.map <- array(' ',c(towns.def.len.x,towns.def.len.y,towns.def.num))
+#2.標記單位城鎮地圖內座標之物件(牆，店舖..)相關屬性資料
+#towns.obj.data <- array(' ',c(length(towns.def.store.symbol),length(obj.rowname),towns.def.num))
+towns.obj.data <- data.frame()
+#3.建材種類資料
+#towns.material <- data.frame(
+#                entry='☐',
+#                wall='∎',
+#                tree='⁂',
+#                door.left='◖',
+#                door.right='◗'
+#)
+towns.material <- data.frame(id=NA,symbol=NA,name=NA)
+towns.material <- df.insertROW(towns.material,c('entry','☐','主入口'))
+towns.material <- df.insertROW(towns.material,c('wall','∎','石牆'))
+towns.material <- df.insertROW(towns.material,c('tree','⁂','白楊樹'))
+towns.material <- df.insertROW(towns.material,c('door.left','◖','左大門'))
+towns.material <- df.insertROW(towns.material,c('door.right','◗','右大門'))
+
+##自動產生城鎮資料
+for(t.id in 1:towns.def.num){
 
         #城鎮基本資料
-        town.type <- towns.type[1]
-        town.name <- towns.name[i]
+        town.type <- towns.def.type[1]
+        town.name <- towns.def.name[t.id]
         town.x=sample(1:map.x)[1]
         town.y=sample(1:map.y)[1]
-        town.symbol <- towns.symbol[1]
+        town.symbol <- towns.def.symbol[1]
 
-        towns.main.data <- rbind(towns.main.data,c(town.type,town.name,town.y,town.x,town.symbol))
-        map.all[town.y,town.x] <- town.symbol
+        world.obj.data <- rbind(world.obj.data,c(town.type,town.name,town.y,town.x,town.symbol))
+        world.map[town.y,town.x] <- town.symbol
 
         #產生城鎮地圖
         ##產生圍牆
-        for(k in 1:towns.len.x){
-                towns.build.store.map[1,k,i] <-towns.build.material$wall
-                towns.build.store.map[towns.len.y,k,i] <-towns.build.material$wall
+        for(k in 1:towns.def.len.x){
+                towns.map[1,k,t.id] <-df.lookup(db=towns.material,patten='wall',index=1,output=2)
+                towns.map[towns.def.len.y,k,t.id] <-df.lookup(db=towns.material,patten='wall',index=1,output=2)
         }
         
-        for(k in 1:towns.len.y){
-                towns.build.store.map[k,1,i] <-towns.build.material$wall
-                towns.build.store.map[k,towns.len.x,i] <-towns.build.material$wall
+        for(k in 1:towns.def.len.y){
+                towns.map[k,1,t.id] <-df.lookup(db=towns.material,patten='wall',index=1,output=2)
+                towns.map[k,towns.def.len.x,t.id] <-df.lookup(db=towns.material,patten='wall',index=1,output=2)
         }
 
         ##產生村鎮大門
-        getpos <- player.pos.gen(towns.len.y,towns.len.x,mode='village')
-        towns.build.store.map[towns.len.y,getpos$x,i] <-towns.build.material$entry
-        towns.build.store.map[towns.len.y,getpos$x-1,i] <-towns.build.material$door.left
-        towns.build.store.map[towns.len.y,getpos$x+1,i] <-towns.build.material$door.right
+        getpos <- player.pos.gen(towns.def.len.y,towns.def.len.x,mode='village')
+        towns.map[towns.def.len.y,getpos$x,t.id] <-df.lookup(db=towns.material,patten='entry',index=1,output=2)
+        towns.map[towns.def.len.y,getpos$x-1,t.id] <-df.lookup(db=towns.material,patten='door.left',index=1,output=2)
+        towns.map[towns.def.len.y,getpos$x+1,t.id] <-df.lookup(db=towns.material,patten='door.right',index=1,output=2)
 
-        ##產生城鎮相關設施和店舖
-        for(j in 1:length(towns.build.store.symbol)){
-        
-                #城鎮基本資料
-                store.type <- towns.build.store.type[1]
-                store.name <- towns.build.store.name[j]
-                store.x <- sample(2:towns.len.x-1)[1]
-                store.y <- sample(2:towns.len.y-1)[1]
-                store.symbol <- towns.build.store.symbol[j]
+        ##產生單位城鎮內部相關設施和店舖
+        #for(j in 1:length(towns.def.store.symbol)){
+        for(j in 1:nrow(towns.def.obj)){
 
-                towns.build.store.main.data <- rbind(towns.build.store.main.data,c(store.type,store.name,store.y,store.x,store.symbol))
+                #設施和店舖基本資料
+                #obj.type <- towns.def.store.type[1]
+                #obj.name <- towns.def.store.name[j]
+                #obj.x <- sample(2:towns.def.len.x-1)[1]
+                #obj.y <- sample(2:towns.def.len.y-1)[1]
+                #obj.symbol <- towns.def.store.symbol[j]
+                #obj.data <- c(t.id,obj.type,obj.name,obj.y,obj.x,obj.symbol)
+                #towns.obj.data <- rbind(towns.obj.data,obj.data)
 
-                #store.x <- sample(2:towns.len.x-1)[1]
-                #store.y <- sample(2:towns.len.y-1)[1]
-                towns.build.store.map[sample.y,sample.x,i] <-store.symbol         
+                obj.type <- towns.def.obj$type[j]
+                obj.name <- towns.def.obj$name[j]
+                obj.x <- sample(2:towns.def.len.x-1)[1]
+                obj.y <- sample(2:towns.def.len.y-1)[1]
+                obj.symbol <- towns.def.obj$symbol[j]
+                obj.data <- c(t.id,obj.type,obj.name,obj.y,obj.x,obj.symbol)
+                #towns.obj.data <- rbind(towns.obj.data,obj.data)
+                towns.obj.data <- df.insertROW(towns.obj.data,obj.data)
+                towns.map[obj.y,obj.x,t.id] <-obj.symbol         
         } 
-
-
 }
-names(towns.main.data) <- c('type','name','y','x','symbol')
+names(world.obj.data) <- c('type','name','y','x','symbol')
+names(towns.obj.data) <- c('t.id','type','name','y','x','symbol')
 
-player.dataMGR(info=towns.main.data,path='towns.main.data.csv',mo='w')
+player.dataMGR(info=world.obj.data,path='world.obj.data.csv',mo='w')
 
 #勇者初始位置 
 print('[SYS]產生勇者設定...')
@@ -332,9 +395,9 @@ lv =as.numeric(player.data$lv)
 coin =as.numeric(player.data$coin)
 train =as.numeric(player.data$train)
 
-towns.main.data.curr <- towns.main.data
-map.curr <- map.all
-map.curr.name <- map.all.name
+obj.data.curr <- world.obj.data
+map.curr <- world.map
+map.curr.name <- world.map.name
 map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
 
 #主程式
@@ -348,48 +411,36 @@ repeat{
 
 
         if(getans =='i'){
-                #pos.y <- pos.y -1
                 move.x <- 0
                 move.y <- -1
                 get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
                 pos.y <- get.posCheck[2]
                 map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
                
-                #screen.operator(mode='clear')
-                #print(map)
                 print("你正往北走...")}
         if(getans =='m'){
-                #pos.y <- pos.y +1
                 move.x <- 0
                 move.y <- 1
                 get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
                 pos.y <- get.posCheck[2]
                 map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
 
-                #screen.operator(mode='clear')
-                #print(map)
                 print("你正往南走...")}
         if(getans =='l'){
-                #pos.x <- pos.x +1
                 move.x <- 1
                 move.y <- 0
                 get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
                 pos.x <- get.posCheck[1]
                 map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
 
-                #screen.operator(mode='clear')
-                #print(map)
                 print("你正往東走...")}
         if(getans =='j'){
-                #pos.x <- pos.x -1
                 move.x <- -1
                 move.y <- 0
                 get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
                 pos.x <- get.posCheck[1]
                 map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
 
-                #screen.operator(mode='clear')
-                #print(map)
                 print("你正往西走...")}
         
         if(getans =='look'){
@@ -406,15 +457,15 @@ repeat{
                 getBuild <- get.buildINFO(look.y,look.x)
                 if(is.null(getBuild)){
                         getans <- readline(prompt='看來沒啥特別的...')
-                }else if(getBuild){
-                        getans <- readline(paste0('你看到了',gettowns.name,' (e)nter?'))
+                }else{
+                        getans <- readline(paste0('你看到了',getBuild$name,' (e)nter?'))
                         if(getans =='e'){
 
-                                getans <- readline(prompt=paste0('準備進入 ',gettowns.name,' ...'))
+                                getans <- readline(prompt=paste0('準備進入 ',getBuild$name,' ...'))
 
-                                towns.main.data.curr <- 
-                                map.curr <-towns.build.store.map[,,getBuild$id] 
-                                map.curr.name <- gettowns.name
+                                obj.data.curr <- towns.obj.data[towns.obj.data$t.id==getBuild$id,]
+                                map.curr <-towns.map[,,getBuild$id] 
+                                map.curr.name <- getBuild$name
 
                                 map.curr.x <- ncol(map.curr) 
                                 map.curr.y <- nrow(map.curr)
