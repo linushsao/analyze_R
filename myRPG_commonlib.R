@@ -182,7 +182,9 @@ get.buildINFO <- function(y=NULL,x=NULL){
 
 }
 
-pos.check <- function(pos.x,pos.y,move.x,move.y,scr.size,map){
+pos.check <- function(pos.x,pos.y,move.x,move.y,map){
+
+        scr.size <- scr.size.data[env.map[1]+1]
 
         map.x <- ncol(map)
         map.y <- nrow(map)
@@ -213,8 +215,10 @@ pos.check <- function(pos.x,pos.y,move.x,move.y,scr.size,map){
         return(c(pos.x+move.x,pos.y+move.y))
 }
 
-screen.generator <- function(map,pos.x,pos.y,scr.size){
+#screen.generator <- function(map,pos.x,pos.y,scr.size){
+screen.generator <- function(map,pos.x,pos.y){
 
+        scr.size <- scr.size.data[mode.map+1]
         offset.size <- floor(scr.size*0.5)
         map.x <- ncol(map)
         map.y <- nrow(map)

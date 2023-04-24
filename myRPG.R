@@ -35,14 +35,13 @@ getpos <- player.pos.gen(map.curr.y,map.curr.x)
 pos.x <- getpos$x
 pos.y <- getpos$y
 
-map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
+map <- screen.generator(map.curr,pos.x,pos.y)
 screen.operator()
 
 #主程式
 key.pre <-NULL
 
 repeat{
-
 
         display.map(map)
 
@@ -58,9 +57,9 @@ repeat{
         if(getans =='i'){
                 move.x <- 0
                 move.y <- -1
-                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
+                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,map.curr)
                 pos.y <- get.posCheck[2]
-                map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
+                map <- screen.generator(map.curr,pos.x,pos.y)
                
                 screen.operator()
                 print("你正往北走...")}
@@ -68,9 +67,9 @@ repeat{
         if(getans =='m'){
                 move.x <- 0
                 move.y <- 1
-                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
+                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,map.curr)
                 pos.y <- get.posCheck[2]
-                map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
+                map <- screen.generator(map.curr,pos.x,pos.y)
 
                 screen.operator()
                 print("你正往南走...")}
@@ -78,9 +77,9 @@ repeat{
         if(getans =='l'){
                 move.x <- 1
                 move.y <- 0
-                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
+                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,map.curr)
                 pos.x <- get.posCheck[1]
-                map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
+                map <- screen.generator(map.curr,pos.x,pos.y)
 
                 screen.operator()
                 print("你正往東走...")}
@@ -88,9 +87,9 @@ repeat{
         if(getans =='j'){
                 move.x <- -1
                 move.y <- 0
-                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,scr.size,map.curr)
+                get.posCheck <- pos.check(pos.x,pos.y,move.x,move.y,map.curr)
                 pos.x <- get.posCheck[1]
-                map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
+                map <- screen.generator(map.curr,pos.x,pos.y)
 
                 screen.operator()
                 print("你正往西走...")}
@@ -175,7 +174,7 @@ repeat{
 
                                         }
 
-                                map <- screen.generator(map.curr,pos.x,pos.y,scr.size)
+                                map <- screen.generator(map.curr,pos.x,pos.y)
                         }
                 }
 

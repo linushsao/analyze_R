@@ -1,4 +1,4 @@
-#
+#系統變數設定
 print('[SYS]載入系統變數')
 
 #系統變數
@@ -10,8 +10,11 @@ map.y <- 51
 towns.num.limited <- 5 #大地圖城鎮上限數目
 towns.def.len.x <- 11 #城鎮基本尺寸
 towns.def.len.y <- 11
-#顯示範圍9x9
-scr.size <- 9
+#顯示範圍
+#scr.size.0 <- 15 #mode.map=0 之顯示範圍
+#scr.size.1 <- 9  #mode.map=1 之顯示範圍
+scr.size.data <- c(15,9)
+
 ##地圖層級
 ###+1 進入上一子層級地圖
 ###-1 回到下一母層級地圖
