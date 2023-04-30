@@ -1,8 +1,56 @@
 #
 #
-randomize.df <- function(x){
+df.row2vector <- function(x){
+        result <- c()
+        for(i in 1:ncol(x)){
+                result <- c(result,x[1,i])
+        }
+        return(result)
+}
 
-        result <- x[sample(1:nrow(x)),]
+map.generator <- function(m.df=NULL,obj.df=NULL,md='wall.around',symbol=NULL,
+                            map.lenx=NULL,map.leny=NULL,action=0,group=0,belong.to=NULL){
+        #產生外圍圍牆 
+        if(md=='wall.around'){
+                for(k in 1:map.lenx){
+                        m.df[1,k,belong.to] <-symbol
+                        m.df[map.leny,k,belong.to] <-symbol
+                        obj.df <- df.insertROW(obj.df,
+                              c(symbol,'','',action,1,group,def.material))
+                        obj.df <- df.insertROW(obj.df,
+                              c(symbol,'','',action,map.leny,k,group,def.material))
+                }
+
+                for(k in 1:map.leny){
+                        m.df[k,1,belong.to] <-symbol
+                        m.df[k,map.lenx,belong.to] <-symbol
+                        obj.df <- df.insertROW(obj.df,
+                              c(symbol,'','',action,k,1,group,def.material))
+                        obj.df <- df.insertROW(obj.df,
+                              c(symbol,'','',action,k,map.lenx,group,def.material))
+
+                }
+        }
+
+        #於特定座標填入個別符號 
+        if(md=='single.sample'){
+                m.df[map.leny,map.lenx,belong.to] <-symbol
+                obj.df <- df.insertROW(obj.df,
+                              c(symbol,'','',action,map.leny,map.lenx,group,def.material))
+        }
+
+        return(m.df)
+}
+        
+
+randomize.df <- function(x,o.from=1){
+
+        o.to <- nrow(x)
+        m.order <- sample(o.from:o.to)
+
+        if(o.from>1){m.order <- c(1:(o.from-1),m.order)}
+
+        result <- x[m.order,]
         return(result)
 }
 
@@ -48,25 +96,29 @@ get.map.metadata <- function(level=NULL,md=NULL,info=NULL){
         #0:世界地圖層級
         if(level ==0){
                 if(md=='obj.data'){
-                        result <- world.obj.data
+                        result <- towns.obj.data
                 }
                 if(md=='map'){
-                        result <- world.map
+                        result <- worlds.map
                 }
                 if(md=='title'){
-                        result <- world.map.name
+                        result <- worlds.def.name
                 }
-        #1:地圖裡面的子層級(城鎮...)
+        #>=1:地圖裡面的子層級
+        #城鎮=1
         }else if(level ==1){
-                                obj.data.curr <- towns.map.obj[towns.map.obj$t.id==getBuild$id,]
-                                map.curr <-towns.map[,,getBuild$id] 
-                                map.curr.name <- getBuild$name
-
+                                #obj.data.curr <- towns.map.obj[towns.map.obj$t.id==getBuild$id,]
+                                #map.curr <-towns.map[,,getBuild$id] 
+                                #map.curr.name <- getBuild$name
+                                #> getBuild                                                               
+                                #   symbol id name action  y  x   group sub.group   
+                                #3   TN      帕爾      1   31 39  1100         4  
+                        code.group <- as.numeric(info$group)+as.numeric(info$sub.group)
                         if(md=='obj.data'){
-                                result <- towns.map.obj[towns.map.obj$t.id==info$id,]
+                                result <- stores.bytowns.obj.data[stores.bytowns.obj.data$group==code.group,]
                         }
                         if(md=='map'){
-                                result <- towns.map[,,info$id]
+                                result <- towns.map[,,as.numeric(info$sub.group) ]
                         }
                         if(md=='title'){
                                 result <- info$name
@@ -129,12 +181,12 @@ player.pos.gen <- function(map.y,map.x,mode='world'){
 
         if(mode == 'world'){
                 #世界模式>>正中心
-                pos.x <- floor(map.x*0.5) 
+                pos.x <- ceiling(map.x*0.5) 
                 pos.y <- floor(map.y*0.5)
         
         }else if(mode == 'village'){
                  #村鎮模式>>正下方
-                pos.x <- floor(map.x*0.5) 
+                pos.x <- ceiling(map.x*0.5) 
                 pos.y <- map.y-1
         }
       
@@ -148,36 +200,20 @@ player.pos.gen <- function(map.y,map.x,mode='world'){
 get.buildINFO <- function(y=NULL,x=NULL){
 
         result.df <- NULL
-        check.symbol <- map.curr[y,x]
         #檢查地圖所屬之物件列表
         for(i in 1:nrow(obj.data.curr)){
-                if(obj.data.curr$x[i] ==x
-                   && obj.data.curr$y[i] ==y){
-                        result.df <- data.frame(
-                                        id=i,
-                                        symbol=obj.data.curr$symbol[i],
-                                        name=paste0(obj.data.curr$name[i]),
-                                        sub.group=obj.data.curr$sub.group[i]
-                        )
+                if(as.numeric(obj.data.curr$x[i]) ==x
+                   && as.numeric(obj.data.curr$y[i]) ==y){
+                        #result.df <- data.frame(
+                        #                id=i,
+                        #                symbol=obj.data.curr$symbol[i],
+                        #                name=paste0(obj.data.curr$name[i]),
+                        #                sub.group=obj.data.curr$sub.group[i]
+                        #)
+                        result.df <- obj.data.curr[i,]
                         #names(result.df) <- c('id','name')
                 }        
         }
-
-        if(is.null(result.df)){
-                for(i in 1:ncol(towns.material)){
-                        if(check.symbol==towns.material$symbol[i])
-                                result.df <- data.frame(
-                                                id=towns.material$type[i],
-                                                symbol=towns.material$symbol[i],
-                                                name=towns.material$name[i],
-                                                sub.group=towns.material$sub.group[i]
-
-                                )
-
-                }
-
-        }
-        
         return(result.df)
 
 }
@@ -204,9 +240,9 @@ pos.check <- function(pos.x,pos.y,move.x,move.y,map){
                 pos.y <- 1
                 move.y <- 0
         #聚落/建築物檢查
-        }else if(check.symbol %in% towns.def.symbol 
-                || check.symbol %in% towns.def.obj$symbol
-                || check.symbol %in% towns.material$symbol){
+        }else if(check.symbol %in% towns.obj.data$symbol 
+                || check.symbol %in% stores.obj.data$symbol 
+                || check.symbol %in% material.obj.data$symbol){
 
                 move.x <- 0
                 move.y <- 0

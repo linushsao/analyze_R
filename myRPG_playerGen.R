@@ -20,6 +20,9 @@ player.data <- data.frame(
 lv <- player.data$lv
 hp <- player.data$hp
 mp<- player.data$mp
+sp<- player.data$sp
+equ<- player.data$equ
+att<- player.data$att
 coin<- player.data$coin
 train<- player.data$train
 

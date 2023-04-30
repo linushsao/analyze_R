@@ -7,7 +7,7 @@ print('[SYS]載入通用函式...')
 
 lib.extra <- '~/src/analyze_R/lib'
 source('myRPG_config.R')#建立系統變數
-source('myRPG_commonlib.R')#地圖通用函式
+source('myRPG_api.R')#地圖通用函式
 source('myRPG_worldGen.R') #地圖產生函式
 source('myRPG_playerGen.R') #勇者產生函式
 source('myRPG_monsterGen.R') #生物產生函式
@@ -16,7 +16,7 @@ source(paste(lib.extra,'misc.R',sep='/'))#通用函式
 #===================主程式=================
 
 #儲存地圖資料
-player.dataMGR(info=world.obj.data,path='world.obj.data.csv',mo='w')
+player.dataMGR(info=towns.obj.data,path='towns.obj.data.csv',mo='w')
 
 #維度編號(0:世界地圖 1:城鎮... 2:城鎮內建物設施)
 env.map <- rep(0,10)
@@ -94,7 +94,7 @@ repeat{
                 screen.operator()
                 print("你正往西走...")}
         
-        if(getans =='look'){
+        if(getans =='look' || getans =='lk'){
                 
                 getans <- readline(prompt=paste0('觀察方向(l/j/m/i) '))
 
@@ -109,7 +109,7 @@ repeat{
                 if(is.null(getBuild)){
                         getans <- readline(prompt='看來沒啥特別的...')
                 }else{
-                        info.entry <- ifelse(getBuild$sub.group==0,
+                        info.entry <- ifelse(getBuild$action==0,
                                                 '',
                                                 ' (e)nter ')
                         getans <- readline(paste0('你看到了',getBuild$name,info.entry))
@@ -118,9 +118,10 @@ repeat{
 
                                 getans <- readline(prompt=paste0('準備進入 ',getBuild$name,' ...'))
                                 
-                                status.updn <- as.numeric(getBuild$sub.group)
+                                status.updn <- as.numeric(getBuild$action)
                                 #更新地圖層級
                                 ##往上一子層級地圖前，儲存目前地圖層級及座標
+                                a <-readline("T1");
                                 if(status.updn>0)
                                 {
                                         env.map <- push.pull(vec=env.map,
@@ -133,16 +134,20 @@ repeat{
                                                              num=pos.y,
                                                              md=status.updn)
                                 }
+                                
+                                a <-readline("T1");
 
                                 #更新地圖層級
                                 mode.map <- mode.map +status.updn
                                 mode.map <- ifelse(mode.map<0,0,mode.map)
-                               
+                                a <-readline("T1");
+                              
                                 #更新當前使用之地圖資料陣列
                                 obj.data.curr <- get.map.metadata(level=mode.map,md='obj.data',info=getBuild) 
                                 map.curr <- get.map.metadata(level=mode.map,md='map',info=getBuild) 
                                 map.curr.name <- get.map.metadata(level=mode.map,md='title',info=getBuild) 
-                                
+                                a <-readline("T1");
+
                                 #取得勇者正確之位置座標
                                 if(status.updn >0)
                                 {
