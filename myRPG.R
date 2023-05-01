@@ -45,7 +45,7 @@ repeat{
 
         display.map(map)
 
-        getans <- readline(prompt=paste0("[",map.curr.name," ",pos.y," ",pos.x, "] ","lv",lv," hp",hp," mp",mp," coin",coin," exp",train," (j/l/i/m/o) "))
+        getans <- readline(prompt=paste0("[",mode.map,status.updn,map.curr.name," ",pos.y," ",pos.x, "] ","lv",lv," hp",hp," mp",mp," coin",coin," exp",train," (j/l/i/m/o) "))
 
         #檢查輸入按鍵
         if(!is.null(key.pre) && getans ==''){
@@ -112,16 +112,15 @@ repeat{
                         info.entry <- ifelse(getBuild$action==0,
                                                 '',
                                                 ' (e)nter ')
-                        getans <- readline(paste0('你看到了',getBuild$name,info.entry))
+                        getans <- readline(paste0('你看到了',getBuild$name,getBuild$action,info.entry))
                         if((getans =='e' || getans =='k') 
-                           && getBuild$sub.group !=0){
+                           && getBuild$action !=0){
 
                                 getans <- readline(prompt=paste0('準備進入 ',getBuild$name,' ...'))
                                 
                                 status.updn <- as.numeric(getBuild$action)
                                 #更新地圖層級
-                                ##往上一子層級地圖前，儲存目前地圖層級及座標
-                                a <-readline("T1");
+                                a<-readline(paste0(mode.map,status.updn,"##往上一子層級地圖前，儲存目前地圖層級及座標"))
                                 if(status.updn>0)
                                 {
                                         env.map <- push.pull(vec=env.map,
@@ -135,23 +134,20 @@ repeat{
                                                              md=status.updn)
                                 }
                                 
-                                a <-readline("T1");
 
-                                #更新地圖層級
+                                a<-readline(paste0(mode.map,status.updn,"#更新地圖層級"))
                                 mode.map <- mode.map +status.updn
                                 mode.map <- ifelse(mode.map<0,0,mode.map)
-                                a <-readline("T1");
                               
-                                #更新當前使用之地圖資料陣列
+                                a<-readline(paste0(mode.map,status.updn,"#更新當前使用之地圖資料陣列"))
                                 obj.data.curr <- get.map.metadata(level=mode.map,md='obj.data',info=getBuild) 
                                 map.curr <- get.map.metadata(level=mode.map,md='map',info=getBuild) 
                                 map.curr.name <- get.map.metadata(level=mode.map,md='title',info=getBuild) 
-                                a <-readline("T1");
 
-                                #取得勇者正確之位置座標
+                                a<-readline(paste0(mode.map,status.updn,"#取得勇者正確之位置座標"))
                                 if(status.updn >0)
                                 {
-                                        #進入上一子層級地圖前，取得勇者進入時之預設起始座標
+                                        a<-readline(paste0(mode.map,status.updn,"#進入上一子層級地圖前，取得勇者進入時之預設起始座標"))
                                         map.curr.x <- ncol(map.curr) 
                                         map.curr.y <- nrow(map.curr)
                                         getpos <- player.pos.gen(map.curr.y,map.curr.x,mode='village')
@@ -161,12 +157,12 @@ repeat{
 
                                 }else if(status.updn <0)
                                         {
-                                                #回到下一母層級地圖前，取得勇者前次座標
-                                                #取得前次座標
+                                                a<-readline(paste0(mode.map,status.updn,"#回到下一母層級地圖前，取得勇者前次座標"))
+                                                a<-readline(paste0(mode.map,status.updn,"#取得前次座標"))
                                                 mode.map <- env.map[1]
                                                 pos.x <- env.map.x[1]
                                                 pos.y <- env.map.y[1]
-                                                #更新env.map資料
+                                                a<-readline(paste0(mode.map,status.updn,"#更新env.map資料"))
                                                 env.map <- push.pull(vec=env.map,
                                                      num=mode.map,
                                                      md=pn(status.updn))

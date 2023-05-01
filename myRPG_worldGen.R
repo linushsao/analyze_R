@@ -166,40 +166,66 @@ for(t.id in 1:towns.def.num){
         group.combine <-as.numeric(towns.obj.data$group[t.id]) +as.numeric(towns.obj.data$sub.group[t.id])
         #產生城鎮地圖
         ###產生外圍圍牆
-        towns.map <- map.generator(m.df=towns.map, obj.df=meta.obj.data, md='wall.around',
-                                        symbol=df.lookup(db=material.obj.data,
-                                                        patten='wall',index=2,output=1),
+        towns.map <- map.generator(m.df=towns.map, md='wall.around',
+                                        data.vector=df.lookup(db=material.obj.data,
+                                                        patten='wall',index=2,output=0),
+                                        map.lenx=towns.def.len.x,
+                                        map.leny=towns.def.len.y,
+                                        belong.to=t.id)
+        stores.bytowns.obj.data <- map.generator(type='obj', obj.df=stores.bytowns.obj.data, md='wall.around',
+                                        data.vector=df.lookup(db=material.obj.data,
+                                                        patten='wall',index=2,output=0),
                                         map.lenx=towns.def.len.x,
                                         map.leny=towns.def.len.y,
                                         action=0,
                                         group=group.combine,
                                         belong.to=t.id)
-        
+
         getpos <- player.pos.gen(towns.def.len.y,towns.def.len.x,mode='village')
         ###產生城鎮大門
-        towns.map <- map.generator(m.df=towns.map, obj.df=meta.obj.data, md='single.sample',
-                                symbol=df.lookup(db=material.obj.data,
-                                                patten='entry',index=2,output=1),
+        towns.map <- map.generator(m.df=towns.map, md='single.sample',
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='entry',index=2,output=0),
+                                map.lenx=getpos$x,
+                                map.leny=towns.def.len.y,
+                                belong.to=t.id)
+        stores.bytowns.obj.data <- map.generator(type='obj', obj.df=stores.bytowns.obj.data, md='single.sample',
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='entry',index=2,output=0),
                                 map.lenx=getpos$x,
                                 map.leny=towns.def.len.y,
                                 action=level.lower,
                                 group=group.combine,
                                 belong.to=t.id)
-        towns.map <- map.generator(m.df=towns.map, obj.df=meta.obj.data, md='single.sample',
-                                symbol=df.lookup(db=material.obj.data,
-                                                patten='door.left',index=2,output=1),
+
+        towns.map <- map.generator(m.df=towns.map, md='single.sample',
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='door.left',index=2,output=0),
+                                map.lenx=getpos$x-1,
+                                map.leny=towns.def.len.y,
+                                belong.to=t.id)
+        stores.bytowns.obj.data <- map.generator(type='obj', obj.df=stores.bytowns.obj.data, md='single.sample',
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='door.left',index=2,output=0),
                                 map.lenx=getpos$x-1,
                                 map.leny=towns.def.len.y,
                                 group=group.combine,
                                 belong.to=t.id)
-        towns.map <- map.generator(m.df=towns.map, obj.df=meta.obj.data, md='single.sample',
-                                symbol=df.lookup(db=material.obj.data,
-                                                patten='door.right',index=2,output=1),
+
+        towns.map <- map.generator(m.df=towns.map, md='single.sample',
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='door.right',index=2,output=0),
+                                map.lenx=getpos$x+1,
+                                map.leny=towns.def.len.y,
+                                belong.to=t.id)
+        stores.bytowns.obj.data <- map.generator(type='obj', obj.df=stores.bytowns.obj.data, md='single.sample',
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='door.right',index=2,output=0),
                                 map.lenx=getpos$x+1,
                                 map.leny=towns.def.len.y,
                                 group=group.combine,
                                 belong.to=t.id)
-        
+
         ##產生單位城鎮內部相關設施和店舖
         faci.num <- sample(1:nrow(stores.obj.data))[1]
 
@@ -218,15 +244,16 @@ for(t.id in 1:towns.def.num){
                 ##產生店舖平面圖
                 stores.map <- map.generator(m.df=stores.map,obj.df=stores.bytowns.obj.data,
                                                 md='wall.around',
-                                                symbol=df.lookup(db=material.obj.data,
-                                                        patten='wall.brick',index=2,output=1),
+                                                data.vector=df.lookup(db=material.obj.data,
+                                                        patten='wall.brick',index=2,output=0),
                                         map.lenx=stores.def.len.x,map.leny=stores.def.len.y
                                         ,group=group.combine,belong.to=t.id)
+                
                 ###產生店舖大門
                 stores.map <- map.generator(m.df=stores.map,obj.df=stores.bytowns.obj.data,
                                             md='single.sample',
-                                symbol=df.lookup(db=material.obj.data,
-                                                patten='store.entry',index=2,output=1),
+                                data.vector=df.lookup(db=material.obj.data,
+                                                patten='store.entry',index=2,output=0),
                                 map.lenx=getpos$x,map.leny=stores.def.len.y
                                 ,group=group.combine ,belong.to=t.id)
 

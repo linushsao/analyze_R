@@ -27,6 +27,7 @@ scr.size.data <- c(13 #1>mode.map=0 之顯示範圍
 ###+1 進入上一子層級地圖
 ###-1 回到下一母層級地圖
 mode.map <- 0   #0表世界地圖層級
+status.updn <- 0  #地圖層級切換方向
 level.upper <- 1  #進入上一子層級地圖
 level.lower <- -1 #回到下一母層級地圖
 

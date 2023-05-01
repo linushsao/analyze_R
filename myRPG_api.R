@@ -8,38 +8,57 @@ df.row2vector <- function(x){
         return(result)
 }
 
-map.generator <- function(m.df=NULL,obj.df=NULL,md='wall.around',symbol=NULL,
+map.generator <- function(type='map',m.df=NULL,obj.df=NULL,md='wall.around',data.vector=NULL,
                             map.lenx=NULL,map.leny=NULL,action=0,group=0,belong.to=NULL){
+        
+        .symbol <- data.vector$symbol
+        .id     <- data.vector$id
+        .name   <- data.vector$name
+
         #產生外圍圍牆 
         if(md=='wall.around'){
                 for(k in 1:map.lenx){
-                        m.df[1,k,belong.to] <-symbol
-                        m.df[map.leny,k,belong.to] <-symbol
+                        if(type=='map'){
+                                m.df[1,k,belong.to] <-.symbol
+                                m.df[map.leny,k,belong.to] <-.symbol
+                        }
+                        if(type=='obj'){
                         obj.df <- df.insertROW(obj.df,
-                              c(symbol,'','',action,1,group,def.material))
+                              c(.symbol,.id,.name,action,1,k,group,0))
                         obj.df <- df.insertROW(obj.df,
-                              c(symbol,'','',action,map.leny,k,group,def.material))
+                              c(.symbol,.id,.name,action,map.leny,k,group,0))
+                        }
                 }
 
                 for(k in 1:map.leny){
-                        m.df[k,1,belong.to] <-symbol
-                        m.df[k,map.lenx,belong.to] <-symbol
+                        if(type=='map'){
+                                m.df[k,1,belong.to] <-.symbol
+                                m.df[k,map.lenx,belong.to] <-.symbol
+                        }
+                        if(type=='obj'){
                         obj.df <- df.insertROW(obj.df,
-                              c(symbol,'','',action,k,1,group,def.material))
+                              c(.symbol,.id,.name,action,k,1,group,0))
                         obj.df <- df.insertROW(obj.df,
-                              c(symbol,'','',action,k,map.lenx,group,def.material))
-
+                              c(.symbol,.id,.name,action,k,map.lenx,group,0))
+                        }
                 }
         }
 
         #於特定座標填入個別符號 
         if(md=='single.sample'){
-                m.df[map.leny,map.lenx,belong.to] <-symbol
-                obj.df <- df.insertROW(obj.df,
-                              c(symbol,'','',action,map.leny,map.lenx,group,def.material))
+                if(type=='map'){
+                        m.df[map.leny,map.lenx,belong.to] <-.symbol
+                }
+                if(type=='obj'){
+                        obj.df <- df.insertROW(obj.df,
+                              c(.symbol,.id,.name,action,map.leny,map.lenx,group,0))
+                }
         }
-
-        return(m.df)
+       
+        result <- NULL
+        if(type=='map'){result <- m.df}
+        if(type=='obj'){result <- obj.df}
+        return(result)
 }
         
 
@@ -156,7 +175,11 @@ df.lookup <- function(db=NULL,patten=NULL,index=NULL,output=NULL){
 
         result <- NULL
         for(i in 1:nrow(db)){
-                if(db[i,index]==patten){result <- db[i,output]}
+                if(db[i,index]==patten){
+                        if(output !=0){result <- db[i,output]}
+                        else{result <- db[i,]}
+
+                }
         }
 
         return(result)
